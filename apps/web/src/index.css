@@ -1,0 +1,203 @@
+/* Onyx Report - Main Styles */
+
+/* Import brand design tokens */
+@import './styles/onyx-tokens.css';
+@import './styles/onyx-typography.css';
+
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-slate-200;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-3xl;
+  }
+
+  h2 {
+    @apply text-2xl;
+  }
+
+  h3 {
+    @apply text-xl;
+  }
+
+  h4 {
+    @apply text-lg;
+  }
+
+  h5 {
+    @apply text-base;
+  }
+
+  h6 {
+    @apply text-sm uppercase tracking-wide;
+  }
+
+  /* Smooth scrolling */
+  html {
+    @apply scroll-smooth;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-onyx-500 ring-offset-2;
+  }
+}
+
+@layer components {
+  /* Container */
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white rounded-lg shadow-card p-6;
+  }
+
+  .card-hover {
+    @apply transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  /* Button base */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md font-medium transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-sm {
+    @apply h-9 px-3 text-sm;
+  }
+
+  .btn-md {
+    @apply h-10 px-4 text-sm;
+  }
+
+  .btn-lg {
+    @apply h-11 px-6 text-base;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply bg-onyx-600 text-white hover:bg-onyx-700;
+    @apply focus-visible:ring-onyx-500;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-100 text-slate-900 hover:bg-slate-200;
+    @apply focus-visible:ring-slate-500;
+  }
+
+  .btn-outline {
+    @apply border border-slate-200 bg-white hover:bg-slate-50;
+    @apply focus-visible:ring-slate-500;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-slate-100;
+    @apply focus-visible:ring-slate-500;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply focus-visible:ring-red-500;
+  }
+
+  /* Input */
+  .input {
+    @apply flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2;
+    @apply text-sm placeholder:text-slate-400;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-onyx-500 focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Label */
+  .label {
+    @apply text-sm font-medium text-slate-700;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .badge-primary {
+    @apply bg-onyx-100 text-onyx-700;
+  }
+
+  .badge-success {
+    @apply bg-emerald-100 text-emerald-700;
+  }
+
+  .badge-warning {
+    @apply bg-amber-100 text-amber-700;
+  }
+
+  .badge-error {
+    @apply bg-red-100 text-red-700;
+  }
+
+  /* Status badges for assessments */
+  .status-draft {
+    @apply badge bg-slate-100 text-slate-700;
+  }
+
+  .status-in-progress {
+    @apply badge bg-blue-100 text-blue-700;
+  }
+
+  .status-submitted {
+    @apply badge bg-amber-100 text-amber-700;
+  }
+
+  .status-approved {
+    @apply badge bg-emerald-100 text-emerald-700;
+  }
+
+  .status-rejected {
+    @apply badge bg-red-100 text-red-700;
+  }
+}
+
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Smooth transitions */
+  .transition-all-smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-onyx-600 to-onyx-700 bg-clip-text text-transparent;
+  }
+}
+
+/* Dark mode (optional - for future implementation) */
+@media (prefers-color-scheme: dark) {
+  .dark {
+    --onyx-bg-primary: var(--onyx-slate-900);
+    --onyx-bg-secondary: var(--onyx-slate-800);
+    --onyx-text-primary: var(--onyx-slate-50);
+    --onyx-text-secondary: var(--onyx-slate-300);
+  }
+}

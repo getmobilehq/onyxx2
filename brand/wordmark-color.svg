@@ -1,0 +1,7 @@
+<svg width="200" height="40" viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- ONYX Text -->
+  <text x="0" y="30" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="32" font-weight="700" fill="#0F172A" letter-spacing="-0.02em">ONYX</text>
+  
+  <!-- REPORT Text -->
+  <text x="98" y="30" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="32" font-weight="700" fill="#2563EB" letter-spacing="-0.02em">REPORT</text>
+</svg>

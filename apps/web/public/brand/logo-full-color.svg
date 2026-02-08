@@ -1,0 +1,20 @@
+<svg width="280" height="64" viewBox="0 0 280 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="onyx-gradient-full" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="100%" style="stop-color:#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Logo Mark -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#onyx-gradient-full)"/>
+  <path d="M32 14L46 32L32 50L18 32L32 14Z" fill="white"/>
+  <path d="M32 18L42 32L32 46L22 32L32 18Z" fill="url(#onyx-gradient-full)" opacity="0.15"/>
+  <path d="M32 14L46 32L32 26L18 32L32 14Z" fill="white" opacity="0.3"/>
+  
+  <!-- ONYX Text -->
+  <text x="76" y="38" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="28" font-weight="700" fill="#0F172A" letter-spacing="-0.02em">ONYX</text>
+  
+  <!-- REPORT Text -->
+  <text x="160" y="38" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="28" font-weight="700" fill="#2563EB" letter-spacing="-0.02em">REPORT</text>
+</svg>

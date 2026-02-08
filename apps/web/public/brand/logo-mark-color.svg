@@ -1,0 +1,20 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="onyx-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="100%" style="stop-color:#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="diamond-shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.3"/>
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#onyx-gradient)"/>
+  <!-- Diamond shape -->
+  <path d="M32 14L46 32L32 50L18 32L32 14Z" fill="white"/>
+  <!-- Inner diamond facet -->
+  <path d="M32 18L42 32L32 46L22 32L32 18Z" fill="url(#onyx-gradient)" opacity="0.15"/>
+  <!-- Top highlight -->
+  <path d="M32 14L46 32L32 26L18 32L32 14Z" fill="white" opacity="0.3"/>
+</svg>
