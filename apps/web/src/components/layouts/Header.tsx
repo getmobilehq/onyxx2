@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useLogout } from '../../features/auth/api/auth.api';
 import { Bell, LogOut, User, ChevronDown } from 'lucide-react';
@@ -11,6 +12,7 @@ import { Bell, LogOut, User, ChevronDown } from 'lucide-react';
 const Header = () => {
   const { user } = useAuth();
   const logout = useLogout();
+  const navigate = useNavigate();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -76,7 +78,7 @@ const Header = () => {
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
-                      // Navigate to profile
+                      navigate('/settings');
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                   >

@@ -130,6 +130,51 @@ export class UserService {
     return user;
   }
 
+  async acceptInvite(
+    token: string,
+    data: { firstName: string; lastName: string },
+  ) {
+    const user = await prisma.user.findFirst({
+      where: { inviteToken: token, deletedAt: null },
+    });
+
+    if (!user) {
+      throw new NotFoundError('Invitation');
+    }
+
+    if (user.isActive) {
+      throw new ConflictError('This invitation has already been accepted');
+    }
+
+    if (user.inviteExpiresAt && user.inviteExpiresAt < new Date()) {
+      throw new ConflictError('This invitation has expired. Please request a new one.');
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        isActive: true,
+        inviteToken: null,
+        inviteExpiresAt: null,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        organizationId: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updated;
+  }
+
   async getById(id: string, organizationId?: string) {
     const user = await prisma.user.findUnique({
       where: { id, deletedAt: null },

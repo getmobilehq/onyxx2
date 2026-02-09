@@ -1,8 +1,98 @@
 import { prisma } from '../lib/prisma.js';
 import { ForbiddenError, NotFoundError } from '../lib/errors.js';
-import type { DeficiencyPriority, DeficiencySeverity } from '@prisma/client';
+import type { DeficiencyPriority, DeficiencySeverity, Prisma } from '@prisma/client';
+
+interface ListAllParams {
+  organizationId: string;
+  page?: number;
+  limit?: number;
+  priority?: DeficiencyPriority;
+  severity?: DeficiencySeverity;
+  buildingId?: string;
+  search?: string;
+}
 
 export class DeficiencyService {
+  async listAll(params: ListAllParams) {
+    const {
+      organizationId,
+      page = 1,
+      limit = 20,
+      priority,
+      severity,
+      buildingId,
+      search,
+    } = params;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.DeficiencyWhereInput = {
+      deletedAt: null,
+      assessmentElement: {
+        assessment: {
+          organizationId,
+          ...(buildingId && { buildingId }),
+        },
+      },
+      ...(priority && { priority }),
+      ...(severity && { severity }),
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' as const } },
+          { description: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
+
+    const [deficiencies, total] = await Promise.all([
+      prisma.deficiency.findMany({
+        where,
+        include: {
+          assessmentElement: {
+            include: {
+              uniformatElement: true,
+              assessment: {
+                select: {
+                  id: true,
+                  name: true,
+                  buildingId: true,
+                  building: {
+                    select: { id: true, name: true },
+                  },
+                },
+              },
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: { photos: true },
+          },
+        },
+        orderBy: [{ priority: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      prisma.deficiency.count({ where }),
+    ]);
+
+    return {
+      deficiencies,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async list(
     assessmentElementId: string,
     organizationId: string,

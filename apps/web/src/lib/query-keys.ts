@@ -25,6 +25,7 @@ export const queryKeys = {
   },
   deficiencies: {
     all: ['deficiencies'] as const,
+    list: (filters: object) => ['deficiencies', 'list', filters] as const,
     detail: (id: string) => ['deficiencies', 'detail', id] as const,
   },
   uniformat: {

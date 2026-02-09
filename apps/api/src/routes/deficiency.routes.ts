@@ -3,6 +3,7 @@ import { deficiencyController } from '../controllers/deficiency.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import {
+  listAllDeficienciesSchema,
   listDeficienciesSchema,
   createDeficiencySchema,
   updateDeficiencySchema,
@@ -27,6 +28,13 @@ router.post(
   authorize('org_admin', 'branch_manager', 'assessor'),
   validate(createDeficiencySchema),
   asyncHandler(deficiencyController.create.bind(deficiencyController)),
+);
+
+// GET /api/v1/deficiencies - List all deficiencies
+router.get(
+  '/deficiencies',
+  validate(listAllDeficienciesSchema),
+  asyncHandler(deficiencyController.listAll.bind(deficiencyController)),
 );
 
 // GET /api/v1/deficiencies/:id - Get deficiency by ID

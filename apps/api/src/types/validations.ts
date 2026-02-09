@@ -218,6 +218,15 @@ export const updateAssessmentElementSchema = z.object({
 });
 
 // Deficiency schemas
+export const listAllDeficienciesSchema = z.object({
+  query: paginationSchema.extend({
+    priority: z.enum(['immediate', 'short_term', 'medium_term', 'long_term']).optional(),
+    severity: z.enum(['minor', 'moderate', 'major', 'critical']).optional(),
+    buildingId: uuidSchema.optional(),
+    search: z.string().optional(),
+  }),
+});
+
 export const listDeficienciesSchema = z.object({
   params: z.object({
     assessmentElementId: uuidSchema,

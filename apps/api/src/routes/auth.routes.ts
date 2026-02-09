@@ -2,8 +2,9 @@ import { Router, Request, Response } from 'express';
 import { SignJWT } from 'jose';
 import { prisma } from '../lib/prisma.js';
 import { config } from '../config/index.js';
-import { UnauthorizedError } from '../lib/errors.js';
+import { UnauthorizedError, ValidationError } from '../lib/errors.js';
 import { authenticate } from '../middleware/auth.js';
+import { userService } from '../services/user.service.js';
 
 const router = Router();
 
@@ -59,6 +60,31 @@ router.post('/login', async (req: Request, res: Response, next) => {
           updatedAt: user.updatedAt,
         },
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/auth/accept-invite/:token
+ * Accept an invitation and activate the user account
+ */
+router.post('/accept-invite/:token', async (req: Request, res: Response, next) => {
+  try {
+    const { token } = req.params;
+    const { firstName, lastName } = req.body;
+
+    if (!firstName || !lastName) {
+      throw new ValidationError('First name and last name are required');
+    }
+
+    const user = await userService.acceptInvite(token, { firstName, lastName });
+
+    res.json({
+      success: true,
+      data: user,
+      message: 'Invitation accepted successfully',
     });
   } catch (error) {
     next(error);

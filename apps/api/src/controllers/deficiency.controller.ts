@@ -2,6 +2,26 @@ import { Request, Response } from 'express';
 import { deficiencyService } from '../services/deficiency.service.js';
 
 export class DeficiencyController {
+  async listAll(req: Request, res: Response) {
+    const { page, limit, priority, severity, buildingId, search } = req.query;
+
+    const result = await deficiencyService.listAll({
+      organizationId: req.user!.organizationId,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      priority: priority as any,
+      severity: severity as any,
+      buildingId: buildingId as string | undefined,
+      search: search as string | undefined,
+    });
+
+    res.json({
+      success: true,
+      data: result.deficiencies,
+      meta: result.meta,
+    });
+  }
+
   async list(req: Request, res: Response) {
     const { assessmentElementId } = req.params;
     const { priority, severity } = req.query;

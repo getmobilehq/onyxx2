@@ -1,13 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../lib/api-client';
 import { queryKeys } from '../../../lib/query-keys';
-import type { Deficiency, DeficiencyFormData } from '../../../types';
+import type { Deficiency, DeficiencyFormData, PaginatedResponse } from '../../../types';
 
 // ============================================
 // API FUNCTIONS
 // ============================================
 
+export interface ListDeficienciesParams {
+  page?: number;
+  limit?: number;
+  priority?: string;
+  severity?: string;
+  buildingId?: string;
+  search?: string;
+}
+
 export const deficienciesApi = {
+  listAll: async (params: ListDeficienciesParams = {}): Promise<PaginatedResponse<Deficiency>> => {
+    const { data } = await apiClient.get('/deficiencies', { params });
+    return data;
+  },
+
   listByElement: async (elementId: string): Promise<Deficiency[]> => {
     const { data } = await apiClient.get(`/assessment-elements/${elementId}/deficiencies`);
     return data;
@@ -36,6 +50,13 @@ export const deficienciesApi = {
 // ============================================
 // QUERY HOOKS
 // ============================================
+
+export const useDeficiencies = (filters: ListDeficienciesParams = {}) => {
+  return useQuery({
+    queryKey: queryKeys.deficiencies.list(filters),
+    queryFn: () => deficienciesApi.listAll(filters),
+  });
+};
 
 export const useElementDeficiencies = (elementId: string) => {
   return useQuery({

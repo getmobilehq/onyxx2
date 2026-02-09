@@ -32,6 +32,14 @@ export const authApi = {
   },
 
   /**
+   * Accept an invitation
+   */
+  acceptInvite: async (token: string, data: { firstName: string; lastName: string }): Promise<User> => {
+    const { data: result } = await apiClient.post<User>(`/auth/accept-invite/${token}`, data);
+    return result;
+  },
+
+  /**
    * Logout (client-side only - clear token)
    */
   logout: () => {
@@ -71,6 +79,16 @@ export const useLogout = () => {
     onSuccess: () => {
       clearAuth();
     },
+  });
+};
+
+/**
+ * Accept invite mutation hook
+ */
+export const useAcceptInvite = () => {
+  return useMutation({
+    mutationFn: ({ token, data }: { token: string; data: { firstName: string; lastName: string } }) =>
+      authApi.acceptInvite(token, data),
   });
 };
 
