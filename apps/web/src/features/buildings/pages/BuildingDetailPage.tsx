@@ -9,14 +9,17 @@ import {
   Layers,
   Ruler,
   DollarSign,
-  Image,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useBuilding, useBuildingStats, useBuildingAssessments, useDeleteBuilding } from '../api/buildings.api';
+import { useBuildingPhotos, useDeletePhoto } from '../../photos/api/photos.api';
+import { useAuth } from '../../../hooks/useAuth';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import FCIBadge from '../../../components/ui/FCIBadge';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import PhotoUploader from '../../../components/ui/PhotoUploader';
+import PhotoGallery from '../../../components/ui/PhotoGallery';
 
 type Tab = 'overview' | 'assessments' | 'photos';
 
@@ -36,10 +39,13 @@ export default function BuildingDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showDelete, setShowDelete] = useState(false);
 
+  const { canEditAssessments } = useAuth();
   const { data: building, isLoading, error } = useBuilding(id!);
   const { data: stats } = useBuildingStats(id!);
   const { data: assessmentsData } = useBuildingAssessments(id!);
+  const { data: photos } = useBuildingPhotos(id!);
   const deleteMutation = useDeleteBuilding();
+  const deletePhotoMutation = useDeletePhoto();
 
   const assessments = assessmentsData?.data || [];
 
@@ -75,7 +81,7 @@ export default function BuildingDetailPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'assessments', label: `Assessments (${building._count?.assessments ?? 0})` },
-    { key: 'photos', label: `Photos (${building.photos?.length ?? 0})` },
+    { key: 'photos', label: `Photos (${photos?.length ?? 0})` },
   ];
 
   return (
@@ -288,26 +294,23 @@ export default function BuildingDetailPage() {
       )}
 
       {activeTab === 'photos' && (
-        <div className="card">
-          {!building.photos || building.photos.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
-              <Image className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              No photos for this building
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {building.photos.map((photo) => (
-                <div key={photo.id} className="aspect-square rounded-lg bg-slate-100 overflow-hidden">
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                    <div className="text-center">
-                      <Image className="w-8 h-8 mx-auto mb-1" />
-                      <p className="text-xs">{photo.caption || photo.originalFilename || 'Photo'}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <div className="space-y-4">
+          {canEditAssessments() && (
+            <PhotoUploader parentType="building" parentId={id!} />
           )}
+          <PhotoGallery
+            photos={photos || []}
+            canEdit={canEditAssessments()}
+            onDelete={async (photoId) => {
+              try {
+                await deletePhotoMutation.mutateAsync(photoId);
+                toast.success('Photo deleted');
+              } catch {
+                toast.error('Failed to delete photo');
+              }
+            }}
+            isDeleting={deletePhotoMutation.isPending}
+          />
         </div>
       )}
 

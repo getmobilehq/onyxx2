@@ -258,14 +258,23 @@ export interface Photo {
   originalFilename?: string | null;
   mimeType?: string | null;
   fileSize?: number | null;
-  s3Key: string;
-  s3Bucket: string;
+  url: string;
+  storagePath: string;
   thumbnailS3Key?: string | null;
   caption?: string | null;
   sortOrder?: number | null;
   uploadedById?: string | null;
   createdAt: string;
   uploadedBy?: User;
+}
+
+export interface PhotoUploadData {
+  photo: File;
+  buildingId?: string;
+  assessmentElementId?: string;
+  deficiencyId?: string;
+  caption?: string;
+  sortOrder?: number;
 }
 
 // ============================================
@@ -413,4 +422,52 @@ export interface ForecastYear {
 export interface CapitalForecastReport {
   forecast: ForecastYear[];
   totalCost: number;
+}
+
+// ============================================
+// USER MANAGEMENT FORMS
+// ============================================
+
+export interface InviteUserFormData {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: UserRole;
+  phone?: string;
+  branchIds?: string[];
+}
+
+export interface UpdateUserFormData {
+  firstName?: string;
+  lastName?: string;
+  role?: UserRole;
+  phone?: string;
+  isActive?: boolean;
+}
+
+// ============================================
+// BRANCH FORM
+// ============================================
+
+export interface BranchFormData {
+  name: string;
+  code?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+}
+
+// ============================================
+// ORGANIZATION
+// ============================================
+
+export interface OrganizationStats {
+  totalBuildings: number;
+  totalBranches: number;
+  totalUsers: number;
+  totalAssessments: number;
+  averageFci: number;
 }

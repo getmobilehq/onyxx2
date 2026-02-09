@@ -10,6 +10,7 @@ export const queryKeys = {
   branches: {
     all: ['branches'] as const,
     list: () => ['branches', 'list'] as const,
+    detail: (id: string) => ['branches', 'detail', id] as const,
   },
   assessments: {
     all: ['assessments'] as const,
@@ -34,6 +35,19 @@ export const queryKeys = {
   users: {
     all: ['users'] as const,
     list: (filters: object) => ['users', 'list', filters] as const,
+    detail: (id: string) => ['users', 'detail', id] as const,
+    branches: (id: string) => ['users', 'branches', id] as const,
+  },
+  organizations: {
+    all: ['organizations'] as const,
+    detail: (id: string) => ['organizations', 'detail', id] as const,
+    stats: (id: string) => ['organizations', 'stats', id] as const,
+  },
+  photos: {
+    all: ['photos'] as const,
+    byBuilding: (buildingId: string) => ['photos', 'building', buildingId] as const,
+    byElement: (elementId: string) => ['photos', 'element', elementId] as const,
+    byDeficiency: (deficiencyId: string) => ['photos', 'deficiency', deficiencyId] as const,
   },
   reports: {
     all: ['reports'] as const,

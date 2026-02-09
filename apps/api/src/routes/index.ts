@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import authRoutes from './auth.routes.js';
 import organizationRoutes from './organization.routes.js';
 import branchRoutes from './branch.routes.js';
 import buildingRoutes from './building.routes.js';
@@ -12,6 +13,7 @@ import reportsRoutes from './reports.routes.js';
 const router = Router();
 
 // Mount all routes
+router.use('/auth', authRoutes);
 router.use('/organizations', organizationRoutes);
 router.use('/branches', branchRoutes);
 router.use('/buildings', buildingRoutes);

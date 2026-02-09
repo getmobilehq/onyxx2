@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, Plus, Pencil, Trash2, Layers } from 'lucide-react';
+import { ChevronRight, Plus, Pencil, Trash2, Layers, Camera, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAssessment } from '../api/assessments.api';
 import { useAssessmentElements } from '../api/elements.api';
@@ -10,6 +10,7 @@ import {
   useUpdateDeficiency,
   useDeleteDeficiency,
 } from '../api/deficiencies.api';
+import { useElementPhotos, useDeficiencyPhotos, useDeletePhoto } from '../../photos/api/photos.api';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ConditionBadge from '../../../components/ui/ConditionBadge';
 import SeverityBadge from '../../../components/ui/SeverityBadge';
@@ -17,7 +18,38 @@ import PriorityBadge from '../../../components/ui/PriorityBadge';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import DeficiencyFormDialog from '../../../components/ui/DeficiencyFormDialog';
+import PhotoUploader from '../../../components/ui/PhotoUploader';
+import PhotoGallery from '../../../components/ui/PhotoGallery';
 import type { Deficiency, DeficiencyFormData } from '../../../types';
+
+// Inline component for deficiency photos (fetched lazily when expanded)
+function DeficiencyPhotos({ deficiencyId, canEdit }: { deficiencyId: string; canEdit: boolean }) {
+  const { data: photos } = useDeficiencyPhotos(deficiencyId);
+  const deletePhotoMutation = useDeletePhoto();
+
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-100">
+      {canEdit && (
+        <div className="mb-3">
+          <PhotoUploader parentType="deficiency" parentId={deficiencyId} />
+        </div>
+      )}
+      <PhotoGallery
+        photos={photos || []}
+        canEdit={canEdit}
+        onDelete={async (photoId) => {
+          try {
+            await deletePhotoMutation.mutateAsync(photoId);
+            toast.success('Photo deleted');
+          } catch {
+            toast.error('Failed to delete photo');
+          }
+        }}
+        isDeleting={deletePhotoMutation.isPending}
+      />
+    </div>
+  );
+}
 
 function formatCurrency(value: number | null | undefined): string {
   if (value == null) return 'N/A';
@@ -37,6 +69,7 @@ export default function ElementDetailPage() {
   const [showDeficiencyForm, setShowDeficiencyForm] = useState(false);
   const [selectedDeficiency, setSelectedDeficiency] = useState<Deficiency | null>(null);
   const [deficiencyToDelete, setDeficiencyToDelete] = useState<Deficiency | null>(null);
+  const [expandedDefPhotos, setExpandedDefPhotos] = useState<string | null>(null);
 
   // Fetch assessment for breadcrumbs
   const { data: assessment } = useAssessment(assessmentId!);
@@ -53,6 +86,10 @@ export default function ElementDetailPage() {
   // Fetch deficiencies for this element
   const { data: deficiencies, isLoading: deficienciesLoading } =
     useElementDeficiencies(elementId!);
+
+  // Fetch element photos
+  const { data: elementPhotos } = useElementPhotos(elementId!);
+  const deletePhotoMutation = useDeletePhoto();
 
   const createMutation = useCreateDeficiency();
   const updateMutation = useUpdateDeficiency();
@@ -311,61 +348,103 @@ export default function ElementDetailPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {deficiencies.map((deficiency) => (
-              <div
-                key={deficiency.id}
-                className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-slate-900">{deficiency.title}</h3>
-                    {deficiency.description && (
-                      <p className="text-sm text-slate-600 mt-1">{deficiency.description}</p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <SeverityBadge severity={deficiency.severity} />
-                      <PriorityBadge priority={deficiency.priority} />
-                      {deficiency.totalCost != null && (
-                        <span className="text-sm font-medium text-slate-700">
-                          {formatCurrency(deficiency.totalCost)}
-                        </span>
+            {deficiencies.map((deficiency) => {
+              const photoCount = deficiency._count?.photos ?? 0;
+              const isPhotosExpanded = expandedDefPhotos === deficiency.id;
+              return (
+                <div
+                  key={deficiency.id}
+                  className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-slate-900">{deficiency.title}</h3>
+                      {deficiency.description && (
+                        <p className="text-sm text-slate-600 mt-1">{deficiency.description}</p>
                       )}
-                      {deficiency.targetYear && (
-                        <span className="text-xs text-slate-500">
-                          Target: {deficiency.targetYear}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        <SeverityBadge severity={deficiency.severity} />
+                        <PriorityBadge priority={deficiency.priority} />
+                        {deficiency.totalCost != null && (
+                          <span className="text-sm font-medium text-slate-700">
+                            {formatCurrency(deficiency.totalCost)}
+                          </span>
+                        )}
+                        {deficiency.targetYear && (
+                          <span className="text-xs text-slate-500">
+                            Target: {deficiency.targetYear}
+                          </span>
+                        )}
+                      </div>
+                      {deficiency.recommendedAction && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          <span className="font-medium">Recommended:</span>{' '}
+                          {deficiency.recommendedAction}
+                        </p>
                       )}
+                      {/* Photos toggle */}
+                      <button
+                        onClick={() => setExpandedDefPhotos(isPhotosExpanded ? null : deficiency.id)}
+                        className="flex items-center gap-1 mt-3 text-xs text-slate-500 hover:text-slate-700"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{photoCount} {photoCount === 1 ? 'photo' : 'photos'}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isPhotosExpanded ? 'rotate-180' : ''}`} />
+                      </button>
                     </div>
-                    {deficiency.recommendedAction && (
-                      <p className="text-xs text-slate-500 mt-2">
-                        <span className="font-medium">Recommended:</span>{' '}
-                        {deficiency.recommendedAction}
-                      </p>
+                    {canEdit && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => openEdit(deficiency)}
+                          className="btn btn-ghost btn-sm p-1.5"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4 text-slate-500" />
+                        </button>
+                        <button
+                          onClick={() => setDeficiencyToDelete(deficiency)}
+                          className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
-                  {canEdit && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => openEdit(deficiency)}
-                        className="btn btn-ghost btn-sm p-1.5"
-                        title="Edit"
-                      >
-                        <Pencil className="w-4 h-4 text-slate-500" />
-                      </button>
-                      <button
-                        onClick={() => setDeficiencyToDelete(deficiency)}
-                        className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                  {/* Expandable deficiency photos */}
+                  {isPhotosExpanded && (
+                    <DeficiencyPhotos deficiencyId={deficiency.id} canEdit={canEdit} />
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
+      </div>
+
+      {/* Element Photos */}
+      <div className="card">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">
+          Photos ({elementPhotos?.length || 0})
+        </h2>
+        {canEdit && (
+          <div className="mb-4">
+            <PhotoUploader parentType="element" parentId={elementId!} />
+          </div>
+        )}
+        <PhotoGallery
+          photos={elementPhotos || []}
+          canEdit={canEdit}
+          onDelete={async (photoId) => {
+            try {
+              await deletePhotoMutation.mutateAsync(photoId);
+              toast.success('Photo deleted');
+            } catch {
+              toast.error('Failed to delete photo');
+            }
+          }}
+          isDeleting={deletePhotoMutation.isPending}
+        />
       </div>
 
       {/* Deficiency Form Dialog */}

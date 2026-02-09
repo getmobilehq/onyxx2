@@ -31,6 +31,10 @@ import ElementDetailPage from './features/assessments/pages/ElementDetailPage';
 // Reports
 import ReportsPage from './features/reports/pages/ReportsPage';
 
+// Users & Settings
+import UsersPage from './features/users/pages/UsersPage';
+import SettingsPage from './features/settings/pages/SettingsPage';
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -69,8 +73,8 @@ function App() {
                 </div>
               } />
               <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/users" element={<div className="card">Users - Coming Soon</div>} />
-              <Route path="/settings" element={<div className="card">Settings - Coming Soon</div>} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
 
