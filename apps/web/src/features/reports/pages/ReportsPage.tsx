@@ -8,7 +8,14 @@ import {
   ChevronDown,
   ChevronRight,
   DollarSign,
+  FileText,
+  Table,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { exportPortfolioPDF, exportPortfolioExcel } from '../../../lib/exports/portfolio.export';
+import { exportAssessmentsPDF, exportAssessmentsExcel } from '../../../lib/exports/assessments.export';
+import { exportDeficienciesPDF, exportDeficienciesExcel } from '../../../lib/exports/deficiencies.export';
+import { exportForecastPDF, exportForecastExcel } from '../../../lib/exports/forecast.export';
 import {
   usePortfolioReport,
   useAssessmentSummaryReport,
@@ -64,6 +71,15 @@ function PortfolioTab() {
 
   const { buildings, summary } = data;
 
+  const handleExport = (fn: () => void, label: string) => {
+    try {
+      fn();
+      toast.success(`${label} downloaded`);
+    } catch {
+      toast.error(`Failed to export ${label}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Filter */}
@@ -75,6 +91,20 @@ function PortfolioTab() {
             onChange={setBranchId}
             placeholder="All Branches"
           />
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => handleExport(() => exportPortfolioPDF(data), 'PDF')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <FileText className="w-4 h-4" /> PDF
+          </button>
+          <button
+            onClick={() => handleExport(() => exportPortfolioExcel(data), 'Excel')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <Table className="w-4 h-4" /> Excel
+          </button>
         </div>
       </div>
 
@@ -192,6 +222,15 @@ function AssessmentsTab() {
 
   const { assessments, statusSummary } = data;
 
+  const handleExport = (fn: () => void, label: string) => {
+    try {
+      fn();
+      toast.success(`${label} downloaded`);
+    } catch {
+      toast.error(`Failed to export ${label}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Filter */}
@@ -203,6 +242,20 @@ function AssessmentsTab() {
             onChange={setStatus}
             placeholder="All Statuses"
           />
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => handleExport(() => exportAssessmentsPDF(data), 'PDF')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <FileText className="w-4 h-4" /> PDF
+          </button>
+          <button
+            onClick={() => handleExport(() => exportAssessmentsExcel(data), 'Excel')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <Table className="w-4 h-4" /> Excel
+          </button>
         </div>
       </div>
 
@@ -292,6 +345,15 @@ function DeficienciesTab() {
   const { summary, byPriority, bySeverity } = data;
   const priorityOrder = ['immediate', 'short_term', 'medium_term', 'long_term'];
 
+  const handleExport = (fn: () => void, label: string) => {
+    try {
+      fn();
+      toast.success(`${label} downloaded`);
+    } catch {
+      toast.error(`Failed to export ${label}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Filter */}
@@ -303,6 +365,20 @@ function DeficienciesTab() {
             onChange={setBuildingId}
             placeholder="All Buildings"
           />
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => handleExport(() => exportDeficienciesPDF(data), 'PDF')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <FileText className="w-4 h-4" /> PDF
+          </button>
+          <button
+            onClick={() => handleExport(() => exportDeficienciesExcel(data), 'Excel')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <Table className="w-4 h-4" /> Excel
+          </button>
         </div>
       </div>
 
@@ -418,6 +494,15 @@ function ForecastTab() {
 
   const { forecast, totalCost } = data;
 
+  const handleExport = (fn: () => void, label: string) => {
+    try {
+      fn();
+      toast.success(`${label} downloaded`);
+    } catch {
+      toast.error(`Failed to export ${label}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Filter */}
@@ -429,6 +514,20 @@ function ForecastTab() {
             onChange={setBranchId}
             placeholder="All Branches"
           />
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => handleExport(() => exportForecastPDF(data), 'PDF')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <FileText className="w-4 h-4" /> PDF
+          </button>
+          <button
+            onClick={() => handleExport(() => exportForecastExcel(data), 'Excel')}
+            className="btn btn-sm btn-outline flex items-center gap-1.5"
+          >
+            <Table className="w-4 h-4" /> Excel
+          </button>
         </div>
       </div>
 
