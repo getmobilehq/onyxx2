@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useAcceptInvite } from '../api/auth.api';
+import { useResetPassword } from '../api/auth.api';
 import { OnyxLogo } from '../../../components/brand/OnyxIcons';
 import { Spinner } from '../../../components/brand/OnyxIcons';
 import { CheckCircle } from 'lucide-react';
 
-export default function AcceptInvitePage() {
+export default function ResetPasswordPage() {
   const { token } = useParams<{ token: string }>();
-  const acceptInvite = useAcceptInvite();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const resetPassword = useResetPassword();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,13 +27,13 @@ export default function AcceptInvitePage() {
     }
 
     try {
-      await acceptInvite.mutateAsync({
+      await resetPassword.mutateAsync({
         token: token!,
-        data: { firstName, lastName, password },
+        data: { password },
       });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to accept invitation. The link may be expired or invalid.');
+      setError(err.message || 'Failed to reset password. The link may be expired or invalid.');
     }
   };
 
@@ -48,10 +46,10 @@ export default function AcceptInvitePage() {
             <OnyxLogo variant="color" width={240} height={56} />
           </div>
           <h1 className="text-2xl font-display font-bold text-slate-900 mb-2">
-            Accept Invitation
+            Reset Password
           </h1>
           <p className="text-slate-600">
-            Complete your account setup to get started
+            Enter your new password below
           </p>
         </div>
 
@@ -59,9 +57,9 @@ export default function AcceptInvitePage() {
           {success ? (
             <div className="text-center py-6">
               <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">Account Activated</h2>
+              <h2 className="text-lg font-semibold text-slate-900 mb-2">Password Reset Successfully</h2>
               <p className="text-slate-600 mb-6">
-                Your account has been set up successfully. You can now sign in.
+                Your password has been updated. You can now sign in with your new password.
               </p>
               <Link to="/login" className="btn btn-primary btn-md w-full">
                 Sign In
@@ -76,39 +74,8 @@ export default function AcceptInvitePage() {
               )}
 
               <div>
-                <label htmlFor="firstName" className="label block mb-2">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="John"
-                  className="input"
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label htmlFor="lastName" className="label block mb-2">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
-                  className="input"
-                  required
-                />
-              </div>
-
-              <div>
                 <label htmlFor="password" className="label block mb-2">
-                  Password
+                  New Password
                 </label>
                 <input
                   id="password"
@@ -119,13 +86,14 @@ export default function AcceptInvitePage() {
                   className="input"
                   required
                   minLength={8}
+                  autoFocus
                   autoComplete="new-password"
                 />
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className="label block mb-2">
-                  Confirm Password
+                  Confirm New Password
                 </label>
                 <input
                   id="confirmPassword"
@@ -142,16 +110,16 @@ export default function AcceptInvitePage() {
 
               <button
                 type="submit"
-                disabled={acceptInvite.isPending}
+                disabled={resetPassword.isPending}
                 className="btn btn-primary btn-md w-full"
               >
-                {acceptInvite.isPending ? (
+                {resetPassword.isPending ? (
                   <span className="flex items-center justify-center gap-2">
                     <Spinner size={20} />
-                    Setting up account...
+                    Resetting...
                   </span>
                 ) : (
-                  'Accept Invitation'
+                  'Reset Password'
                 )}
               </button>
             </form>
@@ -159,7 +127,7 @@ export default function AcceptInvitePage() {
         </div>
 
         <p className="text-center text-sm text-slate-500 mt-6">
-          Already have an account?{' '}
+          Remember your password?{' '}
           <Link to="/login" className="text-onyx-600 hover:text-onyx-700 font-medium">
             Sign in
           </Link>

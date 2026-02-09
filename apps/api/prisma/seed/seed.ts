@@ -1,9 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting seed...');
+
+  // Hash default dev password
+  const defaultPasswordHash = await bcrypt.hash('password123', 12);
 
   // 1. Create Organization
   console.log('Creating organization...');
@@ -29,6 +33,7 @@ async function main() {
       firstName: 'John',
       lastName: 'Admin',
       role: 'org_admin',
+      passwordHash: defaultPasswordHash,
       isActive: true,
     },
   });
@@ -40,6 +45,7 @@ async function main() {
       firstName: 'Sarah',
       lastName: 'Manager',
       role: 'branch_manager',
+      passwordHash: defaultPasswordHash,
       isActive: true,
     },
   });
@@ -51,6 +57,7 @@ async function main() {
       firstName: 'Mike',
       lastName: 'Assessor',
       role: 'assessor',
+      passwordHash: defaultPasswordHash,
       isActive: true,
     },
   });
@@ -355,7 +362,7 @@ async function main() {
   console.log(`   - Uniformat Elements: ${uniformatElements.count}`);
   console.log(`   - Assessment Elements: ${uniformatList.length}`);
   console.log(`   - Deficiency Categories: 6`);
-  console.log('\n🔑 Test Users:');
+  console.log('\n🔑 Test Users (password: password123):');
   console.log(`   - Admin: admin@acme.com (${adminUser.id})`);
   console.log(`   - Manager: manager@acme.com (${managerUser.id})`);
   console.log(`   - Assessor: assessor@acme.com (${assessorUser.id})`);

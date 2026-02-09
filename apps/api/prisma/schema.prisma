@@ -50,8 +50,11 @@ model User {
   isActive        Boolean   @default(true) @map("is_active")
   lastLoginAt     DateTime? @map("last_login_at")
   inviteToken     String?   @unique @map("invite_token") @db.VarChar(255)
-  inviteExpiresAt DateTime? @map("invite_expires_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
+  inviteExpiresAt        DateTime? @map("invite_expires_at")
+  passwordHash           String?   @map("password_hash") @db.VarChar(255)
+  passwordResetToken     String?   @unique @map("password_reset_token") @db.VarChar(255)
+  passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 

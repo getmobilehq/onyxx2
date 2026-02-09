@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useUpdateUser } from '../../users/api/users.api';
+import { useChangePassword } from '../../auth/api/auth.api';
 import { useBranches } from '../../branches/api/branches.api';
 import { useDeleteBranch } from '../api/branches.api';
 import { useOrganization, useOrganizationStats, useUpdateOrganization } from '../api/organizations.api';
@@ -75,7 +76,7 @@ function ProfileTab() {
   };
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl space-y-6">
       <div className="card">
         <h3 className="text-base font-semibold text-slate-900 mb-4">Your Profile</h3>
 
@@ -126,6 +127,100 @@ function ProfileTab() {
           </div>
         </form>
       </div>
+
+      <ChangePasswordSection />
+    </div>
+  );
+}
+
+// ============================================
+// CHANGE PASSWORD SECTION
+// ============================================
+
+function ChangePasswordSection() {
+  const changePassword = useChangePassword();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    try {
+      await changePassword.mutateAsync({ currentPassword, newPassword });
+      toast.success('Password changed successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to change password');
+    }
+  };
+
+  return (
+    <div className="card">
+      <h3 className="text-base font-semibold text-slate-900 mb-4">Change Password</h3>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        <FormField label="Current Password">
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="input"
+            required
+            autoComplete="current-password"
+          />
+        </FormField>
+
+        <FormField label="New Password">
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="input"
+            required
+            minLength={8}
+            placeholder="Min. 8 characters"
+            autoComplete="new-password"
+          />
+        </FormField>
+
+        <FormField label="Confirm New Password">
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="input"
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
+        </FormField>
+
+        <div className="flex justify-end pt-4 border-t border-slate-200">
+          <button type="submit" disabled={changePassword.isPending} className="btn btn-md btn-primary">
+            {changePassword.isPending ? 'Changing...' : 'Change Password'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

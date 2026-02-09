@@ -1,6 +1,8 @@
 import { UserRole, Prisma } from '@prisma/client';
+import bcrypt from 'bcrypt';
 import { prisma } from '../lib/prisma.js';
 import { NotFoundError, ConflictError, ForbiddenError } from '../lib/errors.js';
+import { emailService } from '../lib/email.js';
 import crypto from 'crypto';
 
 interface ListUsersParams {
@@ -124,15 +126,19 @@ export class UserService {
       });
     }
 
-    // TODO: Send invitation email
-    // await emailService.sendInvitation(user.email, inviteToken);
+    // Send invitation email
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+    await emailService.sendInvitation(user.email, inviteToken, org?.name);
 
     return user;
   }
 
   async acceptInvite(
     token: string,
-    data: { firstName: string; lastName: string },
+    data: { firstName: string; lastName: string; password: string },
   ) {
     const user = await prisma.user.findFirst({
       where: { inviteToken: token, deletedAt: null },
@@ -150,11 +156,14 @@ export class UserService {
       throw new ConflictError('This invitation has expired. Please request a new one.');
     }
 
+    const passwordHash = await bcrypt.hash(data.password, 12);
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
+        passwordHash,
         isActive: true,
         inviteToken: null,
         inviteExpiresAt: null,
@@ -254,8 +263,12 @@ export class UserService {
       },
     });
 
-    // TODO: Send invitation email
-    // await emailService.sendInvitation(user.email, inviteToken);
+    // Send invitation email
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+    await emailService.sendInvitation(user.email, inviteToken, org?.name);
 
     return { message: 'Invitation resent successfully' };
   }

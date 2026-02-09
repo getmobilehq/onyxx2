@@ -17,6 +17,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Pages
 import LoginPage from './features/auth/pages/LoginPage';
 import AcceptInvitePage from './features/auth/pages/AcceptInvitePage';
+import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
+import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -53,6 +55,8 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>

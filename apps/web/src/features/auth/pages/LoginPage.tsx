@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useLogin } from '../api/auth.api';
 import { OnyxLogo } from '../../../components/brand/OnyxIcons';
 import { Spinner } from '../../../components/brand/OnyxIcons';
@@ -87,6 +87,15 @@ const LoginPage = () => {
                 required
                 autoComplete="current-password"
               />
+            </div>
+
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-onyx-600 hover:text-onyx-700 font-medium"
+              >
+                Forgot your password?
+              </Link>
             </div>
 
             {/* Submit Button */}

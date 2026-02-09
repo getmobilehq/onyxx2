@@ -32,6 +32,25 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface AcceptInviteData {
+  firstName: string;
+  lastName: string;
+  password: string;
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  password: string;
+}
+
 // ============================================
 // ORGANIZATION & BRANCH
 // ============================================
