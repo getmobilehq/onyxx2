@@ -191,6 +191,21 @@ export class AssessmentController {
       data: result,
     });
   }
+
+  async updateElement(req: Request, res: Response) {
+    const element = await elementService.updateElement(
+      req.params.elementId,
+      req.params.id,
+      req.user!.organizationId,
+      req.user!.id,
+      req.body,
+    );
+
+    res.json({
+      success: true,
+      data: element,
+    });
+  }
 }
 
 export const assessmentController = new AssessmentController();

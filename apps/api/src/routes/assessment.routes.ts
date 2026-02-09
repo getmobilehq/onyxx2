@@ -8,6 +8,7 @@ import {
   listAssessmentsSchema,
   getOrganizationSchema,
   rejectAssessmentSchema,
+  updateAssessmentElementSchema,
 } from '../types/validations.js';
 
 const router = Router();
@@ -123,6 +124,14 @@ router.post(
   authorize('org_admin', 'branch_manager'),
   validate(getOrganizationSchema),
   asyncHandler(assessmentController.bulkAddElements.bind(assessmentController)),
+);
+
+// PATCH /api/v1/assessments/:id/elements/:elementId - Update assessment element
+router.patch(
+  '/:id/elements/:elementId',
+  authorize('org_admin', 'branch_manager', 'assessor'),
+  validate(updateAssessmentElementSchema),
+  asyncHandler(assessmentController.updateElement.bind(assessmentController)),
 );
 
 export default router;

@@ -27,6 +27,7 @@ import AssessmentsPage from './features/assessments/pages/AssessmentsPage';
 import AssessmentDetailPage from './features/assessments/pages/AssessmentDetailPage';
 import AssessmentFormPage from './features/assessments/pages/AssessmentFormPage';
 import ElementDetailPage from './features/assessments/pages/ElementDetailPage';
+import ConductAssessmentPage from './features/assessments/pages/ConductAssessmentPage';
 
 // Reports
 import ReportsPage from './features/reports/pages/ReportsPage';
@@ -60,6 +61,7 @@ function App() {
               <Route path="/assessments/new" element={<AssessmentFormPage />} />
               <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
               <Route path="/assessments/:id/edit" element={<AssessmentFormPage />} />
+              <Route path="/assessments/:id/conduct" element={<ConductAssessmentPage />} />
               <Route path="/assessments/:assessmentId/elements/:elementId" element={<ElementDetailPage />} />
 
               {/* Placeholder routes */}

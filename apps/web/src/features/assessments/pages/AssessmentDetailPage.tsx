@@ -222,14 +222,23 @@ export default function AssessmentDetailPage() {
             </button>
           )}
           {assessment.status === 'in_progress' && (
-            <button
-              onClick={handleSubmit}
-              disabled={submitMutation.isPending}
-              className="btn btn-md btn-primary"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              {submitMutation.isPending ? 'Submitting...' : 'Submit for Review'}
-            </button>
+            <>
+              <Link
+                to={`/assessments/${id}/conduct`}
+                className="btn btn-md btn-primary flex items-center"
+              >
+                <Layers className="w-4 h-4 mr-2" />
+                Conduct Assessment
+              </Link>
+              <button
+                onClick={handleSubmit}
+                disabled={submitMutation.isPending}
+                className="btn btn-md btn-outline"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {submitMutation.isPending ? 'Submitting...' : 'Submit for Review'}
+              </button>
+            </>
           )}
           {assessment.status === 'submitted' && isManager && (
             <>

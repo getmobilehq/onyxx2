@@ -192,6 +192,31 @@ export const rejectAssessmentSchema = z.object({
   }),
 });
 
+// Assessment Element schemas
+export const updateAssessmentElementSchema = z.object({
+  params: z.object({
+    id: uuidSchema,
+    elementId: uuidSchema,
+  }),
+  body: z.object({
+    conditionRating: z.number().int().min(1).max(5).optional(),
+    conditionNotes: z.string().optional(),
+    quantity: z.number().nonnegative().optional(),
+    unitOfMeasure: z.string().max(50).optional(),
+    costPerUnit: z.number().nonnegative().optional(),
+    yearInstalled: z.number().int().min(1800).max(2100).optional(),
+    lifetimeYears: z.number().int().positive().optional(),
+    locationDescription: z.string().optional(),
+    floor: z.string().max(50).optional(),
+    room: z.string().max(100).optional(),
+    manufacturer: z.string().max(255).optional(),
+    model: z.string().max(255).optional(),
+    serialNumber: z.string().max(255).optional(),
+    assetId: z.string().max(255).optional(),
+    status: z.enum(['pending', 'in_progress', 'completed', 'skipped']).optional(),
+  }),
+});
+
 // Deficiency schemas
 export const listDeficienciesSchema = z.object({
   params: z.object({

@@ -170,6 +170,10 @@ export interface AssessmentElement {
   costPerUnit?: number | null;
   renewalFactor: number;
   totalReplacementCost?: number | null;
+  manufacturer?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  assetId?: string | null;
   conditionRating?: number | null;
   conditionNotes?: string | null;
   status: 'pending' | 'in_progress' | 'completed' | 'skipped';
@@ -448,6 +452,24 @@ export interface UpdateUserFormData {
 // ============================================
 // BRANCH FORM
 // ============================================
+
+export interface ElementAssessmentFormData {
+  conditionRating?: number;
+  conditionNotes?: string;
+  quantity?: number;
+  unitOfMeasure?: string;
+  costPerUnit?: number;
+  yearInstalled?: number;
+  lifetimeYears?: number;
+  locationDescription?: string;
+  floor?: string;
+  room?: string;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+  assetId?: string;
+  status?: 'pending' | 'in_progress' | 'completed' | 'skipped';
+}
 
 export interface BranchFormData {
   name: string;
