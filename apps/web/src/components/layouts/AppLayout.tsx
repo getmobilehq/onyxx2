@@ -7,10 +7,15 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import OfflineBanner from '../ui/OfflineBanner';
 import { useUIStore } from '../../stores/ui.store';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 const AppLayout = () => {
   const { isSidebarOpen, isMobile, setMobile } = useUIStore();
+
+  // Initialize network status listener
+  useNetworkStatus();
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 767px)');
@@ -30,6 +35,7 @@ const AppLayout = () => {
         }`}
       >
         <Header />
+        <OfflineBanner />
 
         <main className="p-4 md:p-6">
           <Outlet />

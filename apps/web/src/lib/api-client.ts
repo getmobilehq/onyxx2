@@ -41,6 +41,16 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
+    // If offline and no response (network error), don't clear auth or redirect
+    if (!error.response && !navigator.onLine) {
+      return Promise.reject({
+        message: 'You are offline',
+        status: 0,
+        data: null,
+        isOffline: true,
+      });
+    }
+
     // Handle 401 Unauthorized - Clear token and redirect to login
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');

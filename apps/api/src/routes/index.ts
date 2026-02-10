@@ -10,6 +10,7 @@ import deficiencyRoutes from './deficiency.routes.js';
 import photoRoutes from './photo.routes.js';
 import reportsRoutes from './reports.routes.js';
 import auditRoutes from './audit.routes.js';
+import syncRoutes from './sync.routes.js';
 import { apiLimiter } from '../middleware/rateLimiter.js';
 import { auditLog } from '../middleware/auditLog.js';
 
@@ -33,6 +34,7 @@ router.use(deficiencyRoutes);
 router.use(photoRoutes);
 router.use(reportsRoutes);
 router.use('/audit-logs', auditRoutes);
+router.use('/sync', syncRoutes);
 
 // Health check for authenticated API
 router.get('/health', (_req, res) => {

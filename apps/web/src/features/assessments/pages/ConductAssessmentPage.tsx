@@ -41,6 +41,7 @@ import PhotoUploader from '../../../components/ui/PhotoUploader';
 import PhotoGallery from '../../../components/ui/PhotoGallery';
 import SeverityBadge from '../../../components/ui/SeverityBadge';
 import PriorityBadge from '../../../components/ui/PriorityBadge';
+import { useNetworkStore } from '../../../stores/network.store';
 import type { AssessmentElement, Deficiency, DeficiencySeverity, DeficiencyPriority } from '../../../types';
 import type { DeficiencySchemaType } from '../validations/deficiency.schema';
 
@@ -128,6 +129,7 @@ export default function ConductAssessmentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const { isOnline } = useNetworkStore();
   const { data: assessment, isLoading: assessmentLoading } = useAssessment(id!);
   const { data: elementsData, isLoading: elementsLoading } = useAssessmentElements(id!, { limit: 500 });
   const updateElementMutation = useUpdateElement();
@@ -383,8 +385,9 @@ export default function ConductAssessmentPage() {
         {allDone && (
           <button
             onClick={handleSubmitAssessment}
-            disabled={submitMutation.isPending}
+            disabled={submitMutation.isPending || !isOnline}
             className="btn btn-md btn-primary flex items-center gap-2"
+            title={!isOnline ? 'Requires internet connection' : undefined}
           >
             <Send className="w-4 h-4" />
             {submitMutation.isPending ? 'Submitting...' : 'Submit for Review'}
@@ -642,9 +645,13 @@ export default function ConductAssessmentPage() {
                       )}
                     </h3>
                   </div>
+                  {!isOnline && (
+                    <p className="text-xs text-amber-600 mb-2">Photos require connectivity</p>
+                  )}
                   <PhotoUploader
                     parentType="element"
                     parentId={selectedElementId!}
+                    disabled={!isOnline}
                   />
                   {(elementPhotos as any[]).length > 0 && (
                     <div className="mt-4">
@@ -747,7 +754,7 @@ export default function ConductAssessmentPage() {
                       disabled={updateElementMutation.isPending}
                       className="btn btn-md btn-primary flex items-center gap-2"
                     >
-                      {updateElementMutation.isPending ? 'Saving...' : 'Save & Next'}
+                      {updateElementMutation.isPending ? 'Saving...' : isOnline ? 'Save & Next' : 'Save Offline & Next'}
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -766,12 +773,13 @@ export default function ConductAssessmentPage() {
       {allDone && (
         <div className="card flex items-center justify-between">
           <p className="text-sm text-emerald-600 font-medium">
-            All {totalCount} elements have been assessed. Ready to submit!
+            All {totalCount} elements have been assessed. {isOnline ? 'Ready to submit!' : 'Connect to internet to submit.'}
           </p>
           <button
             onClick={handleSubmitAssessment}
-            disabled={submitMutation.isPending}
+            disabled={submitMutation.isPending || !isOnline}
             className="btn btn-md btn-primary flex items-center gap-2"
+            title={!isOnline ? 'Requires internet connection' : undefined}
           >
             <Send className="w-4 h-4" />
             {submitMutation.isPending ? 'Submitting...' : 'Submit for Review'}

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../lib/api-client';
 import { queryKeys } from '../../../lib/query-keys';
+import { useOfflineMutation } from '../../../hooks/useOfflineMutation';
 import type { AssessmentElement, BulkAddResult, ElementAssessmentFormData, PaginatedResponse } from '../../../types';
 
 // ============================================
@@ -71,20 +72,26 @@ export const useBulkAddElements = () => {
 };
 
 export const useUpdateElement = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      assessmentId,
-      elementId,
-      data,
-    }: {
-      assessmentId: string;
-      elementId: string;
-      data: Partial<ElementAssessmentFormData>;
-    }) => elementsApi.update(assessmentId, elementId, data),
+  return useOfflineMutation<
+    AssessmentElement,
+    { assessmentId: string; elementId: string; data: Partial<ElementAssessmentFormData> }
+  >({
+    mutationFn: ({ assessmentId, elementId, data }) =>
+      elementsApi.update(assessmentId, elementId, data),
+    entityType: 'element',
+    getEndpoint: ({ assessmentId, elementId }) =>
+      `/assessments/${assessmentId}/elements/${elementId}`,
+    getMethod: () => 'PATCH',
+    getEntityId: ({ elementId }) => elementId,
+    getPayload: ({ data }) => data as Record<string, unknown>,
+    invalidateKeys: [],
     onSuccess: (_, { assessmentId }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.elements(assessmentId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentId) });
+      // These are handled by the mutation's built-in cache invalidation
+      // but we also need to trigger them on online success
+      import('../../../lib/query-client').then(({ queryClient }) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.assessments.elements(assessmentId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentId) });
+      });
     },
   });
 };

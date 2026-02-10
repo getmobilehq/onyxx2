@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../lib/api-client';
 import { queryKeys } from '../../../lib/query-keys';
+import { useOfflineMutation } from '../../../hooks/useOfflineMutation';
 import type { Deficiency, DeficiencyFormData, PaginatedResponse } from '../../../types';
 
 // ============================================
@@ -79,26 +80,44 @@ export const useDeficiency = (id: string) => {
 // ============================================
 
 export const useCreateDeficiency = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ elementId, data }: { elementId: string; data: DeficiencyFormData }) =>
-      deficienciesApi.create(elementId, data),
+  return useOfflineMutation<
+    Deficiency,
+    { elementId: string; data: DeficiencyFormData }
+  >({
+    mutationFn: ({ elementId, data }) => deficienciesApi.create(elementId, data),
+    entityType: 'deficiency',
+    getEndpoint: ({ elementId }) => `/assessment-elements/${elementId}/deficiencies`,
+    getMethod: () => 'POST',
+    getEntityId: ({ elementId }) => elementId,
+    getPayload: ({ data }) => data as unknown as Record<string, unknown>,
     onSuccess: (_, { elementId }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.elements.deficiencies(elementId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all });
+      import('../../../lib/query-client').then(({ queryClient }) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.elements.deficiencies(elementId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all });
+      });
     },
   });
 };
 
 export const useUpdateDeficiency = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<DeficiencyFormData> }) =>
-      deficienciesApi.update(id, data),
+  return useOfflineMutation<
+    Deficiency,
+    { id: string; data: Partial<DeficiencyFormData> }
+  >({
+    mutationFn: ({ id, data }) => deficienciesApi.update(id, data),
+    entityType: 'deficiency',
+    getEndpoint: ({ id }) => `/deficiencies/${id}`,
+    getMethod: () => 'PATCH',
+    getEntityId: ({ id }) => id,
+    getPayload: ({ data }) => data as unknown as Record<string, unknown>,
     onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.elements.deficiencies(updated.assessmentElementId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.deficiencies.detail(updated.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all });
+      import('../../../lib/query-client').then(({ queryClient }) => {
+        if (updated && updated.assessmentElementId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.elements.deficiencies(updated.assessmentElementId) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.deficiencies.detail(updated.id) });
+        }
+        queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all });
+      });
     },
   });
 };

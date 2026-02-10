@@ -8,11 +8,12 @@ interface PhotoUploaderProps {
   parentType: 'building' | 'element' | 'deficiency';
   parentId: string;
   onUploadComplete?: () => void;
+  disabled?: boolean;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export default function PhotoUploader({ parentType, parentId, onUploadComplete }: PhotoUploaderProps) {
+export default function PhotoUploader({ parentType, parentId, onUploadComplete, disabled }: PhotoUploaderProps) {
   const uploadMutation = useUploadPhoto();
   const [uploading, setUploading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState('');
@@ -58,7 +59,7 @@ export default function PhotoUploader({ parentType, parentId, onUploadComplete }
     onDrop,
     accept: { 'image/*': [] },
     maxSize: MAX_FILE_SIZE,
-    disabled: uploading,
+    disabled: uploading || disabled,
     onDropRejected: (rejections) => {
       for (const rejection of rejections) {
         for (const error of rejection.errors) {

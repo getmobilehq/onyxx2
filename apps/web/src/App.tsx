@@ -3,12 +3,15 @@
  * Root application component with routing
  */
 
-import React from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Toaster } from 'react-hot-toast';
 import { queryClient } from './lib/query-client';
+import { dexiePersister } from './lib/offline/query-persister';
+import { startSyncWatcher } from './lib/offline/sync-processor';
 import ErrorBoundary from './components/ErrorBoundary';
+import UpdatePrompt from './components/ui/UpdatePrompt';
 
 // Layouts
 import AppLayout from './components/layouts/AppLayout';
@@ -45,11 +48,21 @@ import ReportsPage from './features/reports/pages/ReportsPage';
 import UsersPage from './features/users/pages/UsersPage';
 import SettingsPage from './features/settings/pages/SettingsPage';
 
+const persistOptions = {
+  persister: dexiePersister,
+  maxAge: 1000 * 60 * 60 * 24, // 24 hours
+};
+
 function App() {
+  useEffect(() => {
+    startSyncWatcher();
+  }, []);
+
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
         <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+        <UpdatePrompt />
         <BrowserRouter>
           <Routes>
             {/* Public Routes */}
@@ -102,7 +115,7 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </ErrorBoundary>
   );
 }

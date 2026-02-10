@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useUIStore } from '../../stores/ui.store';
 import { useLogout } from '../../features/auth/api/auth.api';
 import { Menu, Bell, LogOut, User, ChevronDown } from 'lucide-react';
+import SyncStatusIndicator from '../ui/SyncStatusIndicator';
 
 const Header = () => {
   const { user } = useAuth();
@@ -47,6 +48,9 @@ const Header = () => {
             <Bell className="w-5 h-5 text-slate-600" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
+
+          {/* Sync Status */}
+          <SyncStatusIndicator />
 
           {/* User Menu */}
           <div className="relative">
