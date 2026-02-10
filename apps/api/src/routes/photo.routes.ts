@@ -8,6 +8,7 @@ import {
   updatePhotoSchema,
   getOrganizationSchema,
 } from '../types/validations.js';
+import { uploadLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.use(authenticate);
 // POST /api/v1/photos - Upload photo
 router.post(
   '/photos',
+  uploadLimiter,
   authorize('org_admin', 'branch_manager', 'assessor'),
   upload.single('photo'),
   asyncHandler(photoController.upload.bind(photoController)),

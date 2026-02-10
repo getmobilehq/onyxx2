@@ -50,6 +50,10 @@ export const queryKeys = {
     byElement: (elementId: string) => ['photos', 'element', elementId] as const,
     byDeficiency: (deficiencyId: string) => ['photos', 'deficiency', deficiencyId] as const,
   },
+  auditLogs: {
+    all: ['audit-logs'] as const,
+    list: (filters: object) => ['audit-logs', 'list', filters] as const,
+  },
   reports: {
     all: ['reports'] as const,
     portfolio: (filters: object) => ['reports', 'portfolio', filters] as const,

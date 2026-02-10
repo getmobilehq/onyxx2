@@ -9,6 +9,7 @@ import {
   Pencil,
   Trash2,
   Plus,
+  Shield,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
@@ -18,15 +19,17 @@ import { useChangePassword } from '../../auth/api/auth.api';
 import { useBranches } from '../../branches/api/branches.api';
 import { useDeleteBranch } from '../api/branches.api';
 import { useOrganization, useOrganizationStats, useUpdateOrganization } from '../api/organizations.api';
+import { useAuditLogs, type AuditLogFilters } from '../api/audit-logs.api';
 import { organizationSchema, type OrganizationSchemaType } from '../validations/organization.schema';
 import DataTable from '../../../components/ui/DataTable';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import FormField from '../../../components/ui/FormField';
+import Pagination from '../../../components/ui/Pagination';
 import BranchFormDialog from '../components/BranchFormDialog';
-import type { Branch } from '../../../types';
+import type { Branch, AuditLog } from '../../../types';
 
-type Tab = 'profile' | 'branches' | 'organization';
+type Tab = 'profile' | 'branches' | 'organization' | 'audit';
 
 // ============================================
 // TAB 1: PROFILE
@@ -425,6 +428,165 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 }
 
 // ============================================
+// TAB 4: AUDIT LOG (org_admin only)
+// ============================================
+
+const ACTION_OPTIONS = [
+  { value: '', label: 'All Actions' },
+  { value: 'auth.login', label: 'Login' },
+  { value: 'auth.login_failed', label: 'Login Failed' },
+  { value: 'auth.password_changed', label: 'Password Changed' },
+  { value: 'auth.password_reset_requested', label: 'Password Reset' },
+  { value: 'building.create', label: 'Building Created' },
+  { value: 'building.update', label: 'Building Updated' },
+  { value: 'building.delete', label: 'Building Deleted' },
+  { value: 'assessment.create', label: 'Assessment Created' },
+  { value: 'assessment.update', label: 'Assessment Updated' },
+  { value: 'user.create', label: 'User Created' },
+  { value: 'user.update', label: 'User Updated' },
+  { value: 'deficiency.create', label: 'Deficiency Created' },
+  { value: 'deficiency.update', label: 'Deficiency Updated' },
+];
+
+const ENTITY_TYPE_OPTIONS = [
+  { value: '', label: 'All Entities' },
+  { value: 'building', label: 'Building' },
+  { value: 'assessment', label: 'Assessment' },
+  { value: 'user', label: 'User' },
+  { value: 'branch', label: 'Branch' },
+  { value: 'deficiency', label: 'Deficiency' },
+  { value: 'photo', label: 'Photo' },
+];
+
+const auditColumnHelper = createColumnHelper<AuditLog>();
+
+function actionBadgeColor(action: string): string {
+  if (action.includes('login_failed')) return 'bg-red-100 text-red-700';
+  if (action.includes('login')) return 'bg-green-100 text-green-700';
+  if (action.includes('delete')) return 'bg-red-100 text-red-700';
+  if (action.includes('create')) return 'bg-blue-100 text-blue-700';
+  if (action.includes('update')) return 'bg-amber-100 text-amber-700';
+  if (action.includes('password')) return 'bg-purple-100 text-purple-700';
+  return 'bg-slate-100 text-slate-700';
+}
+
+function AuditLogTab() {
+  const [filters, setFilters] = useState<AuditLogFilters>({ page: 1, limit: 20 });
+  const { data, isLoading } = useAuditLogs(filters);
+
+  const logs = data?.data || [];
+  const meta = data?.meta;
+
+  const columns = [
+    auditColumnHelper.accessor('createdAt', {
+      header: 'Timestamp',
+      cell: (info) => (
+        <span className="text-sm text-slate-600 whitespace-nowrap">
+          {new Date(info.getValue()).toLocaleString()}
+        </span>
+      ),
+    }),
+    auditColumnHelper.accessor((row) => {
+      if (!row.user) return '—';
+      return [row.user.firstName, row.user.lastName].filter(Boolean).join(' ') || row.user.email;
+    }, {
+      id: 'user',
+      header: 'User',
+      cell: (info) => <span className="text-sm text-slate-900">{info.getValue()}</span>,
+    }),
+    auditColumnHelper.accessor('action', {
+      header: 'Action',
+      cell: (info) => (
+        <span className={`badge text-xs ${actionBadgeColor(info.getValue())}`}>
+          {info.getValue()}
+        </span>
+      ),
+    }),
+    auditColumnHelper.accessor((row) => {
+      if (!row.entityType) return '—';
+      return row.entityId ? `${row.entityType}:${row.entityId.substring(0, 8)}...` : row.entityType;
+    }, {
+      id: 'entity',
+      header: 'Entity',
+      cell: (info) => <span className="text-sm text-slate-600 font-mono">{info.getValue()}</span>,
+    }),
+    auditColumnHelper.accessor('ipAddress', {
+      header: 'IP Address',
+      cell: (info) => (
+        <span className="text-sm text-slate-500 font-mono">{info.getValue() || '—'}</span>
+      ),
+    }),
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Filter bar */}
+      <div className="card">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Action</label>
+            <select
+              className="input"
+              value={filters.action || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, action: e.target.value || undefined, page: 1 }))}
+            >
+              {ACTION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Entity Type</label>
+            <select
+              className="input"
+              value={filters.entityType || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, entityType: e.target.value || undefined, page: 1 }))}
+            >
+              {ENTITY_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
+            <input
+              type="date"
+              className="input"
+              value={filters.startDate || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined, page: 1 }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">End Date</label>
+            <input
+              type="date"
+              className="input"
+              value={filters.endDate || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined, page: 1 }))}
+            />
+          </div>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <LoadingSpinner size="lg" message="Loading audit logs..." />
+      ) : (
+        <>
+          <DataTable columns={columns} data={logs} emptyMessage="No audit logs found" />
+          {meta && meta.totalPages > 1 && (
+            <Pagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // MAIN PAGE
 // ============================================
 
@@ -432,6 +594,7 @@ const ALL_TABS: { key: Tab; label: string; icon: React.ComponentType<{ className
   { key: 'profile', label: 'Profile', icon: UserCircle },
   { key: 'branches', label: 'Branches', icon: GitBranch, adminOnly: true },
   { key: 'organization', label: 'Organization', icon: Building2, adminOnly: true },
+  { key: 'audit', label: 'Audit Log', icon: Shield, adminOnly: true },
 ];
 
 export default function SettingsPage() {
@@ -476,6 +639,7 @@ export default function SettingsPage() {
       {activeTab === 'profile' && <ProfileTab />}
       {activeTab === 'branches' && isOrgAdmin() && <BranchesTab />}
       {activeTab === 'organization' && isOrgAdmin() && <OrganizationTab />}
+      {activeTab === 'audit' && isOrgAdmin() && <AuditLogTab />}
     </div>
   );
 }

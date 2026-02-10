@@ -8,6 +8,8 @@ import { UnauthorizedError, ValidationError } from '../lib/errors.js';
 import { authenticate } from '../middleware/auth.js';
 import { userService } from '../services/user.service.js';
 import { emailService } from '../lib/email.js';
+import { authLimiter } from '../middleware/rateLimiter.js';
+import { auditService } from '../services/audit.service.js';
 
 const router = Router();
 
@@ -15,7 +17,7 @@ const router = Router();
  * POST /api/v1/auth/login
  * Authenticate user with email and password
  */
-router.post('/login', async (req: Request, res: Response, next) => {
+router.post('/login', authLimiter, async (req: Request, res: Response, next) => {
   try {
     const { email, password } = req.body;
 
@@ -37,6 +39,14 @@ router.post('/login', async (req: Request, res: Response, next) => {
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
+      auditService.log({
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: 'auth.login_failed',
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        metadata: { email },
+      });
       throw new UnauthorizedError('Invalid credentials');
     }
 
@@ -47,9 +57,7 @@ router.post('/login', async (req: Request, res: Response, next) => {
     });
 
     // Sign JWT
-    const secret = new TextEncoder().encode(
-      config.jwtSecret || 'your-super-secret-jwt-key-min-32-chars-change-this-in-production',
-    );
+    const secret = new TextEncoder().encode(config.jwtSecret);
     const token = await new SignJWT({
       sub: user.id,
       organizationId: user.organizationId,
@@ -60,6 +68,14 @@ router.post('/login', async (req: Request, res: Response, next) => {
       .setIssuedAt()
       .setExpirationTime('24h')
       .sign(secret);
+
+    auditService.log({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: 'auth.login',
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
 
     res.json({
       success: true,
@@ -87,7 +103,7 @@ router.post('/login', async (req: Request, res: Response, next) => {
  * POST /api/v1/auth/accept-invite/:token
  * Accept an invitation, set password, and activate the user account
  */
-router.post('/accept-invite/:token', async (req: Request, res: Response, next) => {
+router.post('/accept-invite/:token', authLimiter, async (req: Request, res: Response, next) => {
   try {
     const { token } = req.params;
     const { firstName, lastName, password } = req.body;
@@ -115,7 +131,7 @@ router.post('/accept-invite/:token', async (req: Request, res: Response, next) =
  * POST /api/v1/auth/forgot-password
  * Public endpoint — generates reset token and sends email
  */
-router.post('/forgot-password', async (req: Request, res: Response, next) => {
+router.post('/forgot-password', authLimiter, async (req: Request, res: Response, next) => {
   try {
     const { email } = req.body;
 
@@ -129,18 +145,28 @@ router.post('/forgot-password', async (req: Request, res: Response, next) => {
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
       const resetExpiresAt = new Date();
       resetExpiresAt.setHours(resetExpiresAt.getHours() + 1);
 
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          passwordResetToken: resetToken,
+          passwordResetToken: hashedToken,
           passwordResetExpiresAt: resetExpiresAt,
         },
       });
 
+      // Send plaintext token to user via email
       await emailService.sendPasswordReset(email, resetToken);
+
+      auditService.log({
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: 'auth.password_reset_requested',
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
     }
 
     // Always return the same response to prevent user enumeration
@@ -157,7 +183,7 @@ router.post('/forgot-password', async (req: Request, res: Response, next) => {
  * POST /api/v1/auth/reset-password/:token
  * Public endpoint — validates token and sets new password
  */
-router.post('/reset-password/:token', async (req: Request, res: Response, next) => {
+router.post('/reset-password/:token', authLimiter, async (req: Request, res: Response, next) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
@@ -166,9 +192,12 @@ router.post('/reset-password/:token', async (req: Request, res: Response, next) 
       throw new ValidationError('Password is required and must be at least 8 characters');
     }
 
+    // Hash incoming token before querying
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
     const user = await prisma.user.findFirst({
       where: {
-        passwordResetToken: token,
+        passwordResetToken: hashedToken,
         passwordResetExpiresAt: { gte: new Date() },
         isActive: true,
         deletedAt: null,
@@ -256,6 +285,14 @@ router.post('/change-password', authenticate, async (req: Request, res: Response
     await prisma.user.update({
       where: { id: userId },
       data: { passwordHash },
+    });
+
+    auditService.log({
+      organizationId: req.user!.organizationId,
+      userId,
+      action: 'auth.password_changed',
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
     });
 
     res.json({

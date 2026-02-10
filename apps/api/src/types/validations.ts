@@ -316,3 +316,15 @@ export const capitalForecastReportSchema = z.object({
     branchId: uuidSchema.optional(),
   }),
 });
+
+// Audit log validations
+export const listAuditLogsSchema = z.object({
+  query: paginationSchema.extend({
+    action: z.string().max(50).optional(),
+    entityType: z.string().max(50).optional(),
+    entityId: uuidSchema.optional(),
+    userId: uuidSchema.optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+  }),
+});

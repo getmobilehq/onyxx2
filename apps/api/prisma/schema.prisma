@@ -67,6 +67,7 @@ model User {
   createdDeficiencies Deficiency[]
   uploadedPhotos      Photo[]
   syncQueueItems      SyncQueue[]
+  auditLogs           AuditLog[]
 
   @@unique([organizationId, email])
   @@map("users")
@@ -440,4 +441,30 @@ enum SyncStatus {
   processing
   completed
   failed
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  action         String   @db.VarChar(50)
+  entityType     String?  @map("entity_type") @db.VarChar(50)
+  entityId       String?  @map("entity_id") @db.Uuid
+  metadata       Json?    @default("{}")
+  ipAddress      String?  @map("ip_address") @db.VarChar(45)
+  userAgent      String?  @map("user_agent") @db.VarChar(500)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

@@ -9,8 +9,17 @@ import uniformatRoutes from './uniformat.routes.js';
 import deficiencyRoutes from './deficiency.routes.js';
 import photoRoutes from './photo.routes.js';
 import reportsRoutes from './reports.routes.js';
+import auditRoutes from './audit.routes.js';
+import { apiLimiter } from '../middleware/rateLimiter.js';
+import { auditLog } from '../middleware/auditLog.js';
 
 const router = Router();
+
+// Rate limiting for all API routes
+router.use(apiLimiter);
+
+// Auto-audit mutations
+router.use(auditLog);
 
 // Mount all routes
 router.use('/auth', authRoutes);
@@ -23,6 +32,7 @@ router.use('/uniformat', uniformatRoutes);
 router.use(deficiencyRoutes);
 router.use(photoRoutes);
 router.use(reportsRoutes);
+router.use('/audit-logs', auditRoutes);
 
 // Health check for authenticated API
 router.get('/health', (_req, res) => {

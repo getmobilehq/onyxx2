@@ -10,7 +10,7 @@ const configSchema = z.object({
   apiUrl: z.string().url().default('http://localhost:3001'),
   databaseUrl: z.string().min(1),
   redisUrl: z.string().optional(),
-  jwtSecret: z.string().min(32).optional(),
+  jwtSecret: z.string().min(32),
   auth0Domain: z.string().optional(),
   auth0ClientId: z.string().optional(),
   auth0ClientSecret: z.string().optional(),

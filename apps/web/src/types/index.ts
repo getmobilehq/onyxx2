@@ -301,6 +301,29 @@ export interface PhotoUploadData {
 }
 
 // ============================================
+// AUDIT LOG
+// ============================================
+
+export interface AuditLog {
+  id: string;
+  organizationId: string;
+  userId?: string | null;
+  action: string;
+  entityType?: string | null;
+  entityId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+  } | null;
+}
+
+// ============================================
 // API RESPONSES
 // ============================================
 
