@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardStats } from '../features/dashboard/api/dashboard.api';
 import { Building2, ClipboardCheck, AlertTriangle, TrendingUp } from 'lucide-react';
+import { formatDate } from '../lib/date-utils';
 import StatusBadge from '../components/ui/StatusBadge';
 import FCIBadge from '../components/ui/FCIBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -140,8 +141,11 @@ const DashboardPage = () => {
           </Link>
         </div>
         {recentAssessments.length === 0 ? (
-          <div className="text-center py-8 text-slate-400">
-            No assessments yet
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <p className="text-slate-400 mb-3">No assessments yet</p>
+            <Link to="/assessments/new" className="btn btn-sm btn-primary">
+              Create Assessment
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -171,7 +175,7 @@ const DashboardPage = () => {
                       <FCIBadge value={assessment.calculatedFci} />
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-500">
-                      {new Date(assessment.updatedAt).toLocaleDateString()}
+                      {formatDate(assessment.updatedAt)}
                     </td>
                   </tr>
                 ))}

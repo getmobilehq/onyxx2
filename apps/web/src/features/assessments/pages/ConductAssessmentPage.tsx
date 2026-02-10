@@ -305,6 +305,16 @@ export default function ConductAssessmentPage() {
   // Submit assessment
   const handleSubmitAssessment = async () => {
     if (!id) return;
+    if (totalCount === 0) {
+      toast.error('Cannot submit: no elements have been added to this assessment.');
+      return;
+    }
+    if (completedCount === 0) {
+      const confirmed = window.confirm(
+        'No elements have been completed yet. Are you sure you want to submit for review?'
+      );
+      if (!confirmed) return;
+    }
     try {
       await submitMutation.mutateAsync(id);
       toast.success('Assessment submitted for review');

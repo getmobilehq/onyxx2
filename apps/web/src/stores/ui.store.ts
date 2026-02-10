@@ -7,12 +7,16 @@ import { create } from 'zustand';
 
 interface UIState {
   isSidebarOpen: boolean;
+  isMobile: boolean;
+  isMobileMenuOpen: boolean;
   activeModal: string | null;
   notifications: Notification[];
 
   // Actions
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  setMobile: (isMobile: boolean) => void;
+  setMobileMenuOpen: (open: boolean) => void;
   openModal: (modalId: string) => void;
   closeModal: () => void;
   addNotification: (notification: Omit<Notification, 'id'>) => void;
@@ -28,6 +32,8 @@ interface Notification {
 
 export const useUIStore = create<UIState>((set) => ({
   isSidebarOpen: true,
+  isMobile: false,
+  isMobileMenuOpen: false,
   activeModal: null,
   notifications: [],
 
@@ -36,6 +42,12 @@ export const useUIStore = create<UIState>((set) => ({
 
   setSidebarOpen: (open) =>
     set({ isSidebarOpen: open }),
+
+  setMobile: (isMobile) =>
+    set({ isMobile, isMobileMenuOpen: false }),
+
+  setMobileMenuOpen: (open) =>
+    set({ isMobileMenuOpen: open }),
 
   openModal: (modalId) =>
     set({ activeModal: modalId }),

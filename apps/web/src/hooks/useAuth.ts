@@ -49,6 +49,11 @@ export const useAuth = () => {
     return hasAnyRole(['org_admin', 'branch_manager']);
   };
 
+  // Check if user can create/edit buildings
+  const canManageBuildings = (): boolean => {
+    return hasAnyRole(['org_admin', 'branch_manager']);
+  };
+
   // Check if user can view all branches
   const canViewAllBranches = (): boolean => {
     return isOrgAdmin();
@@ -67,6 +72,7 @@ export const useAuth = () => {
     isAssessor,
     isViewer,
     canEditAssessments,
+    canManageBuildings,
     canManageUsers,
     canApproveAssessments,
     canViewAllBranches,

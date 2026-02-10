@@ -65,16 +65,22 @@ function App() {
 
                 {/* Buildings */}
                 <Route path="/buildings" element={<BuildingsPage />} />
-                <Route path="/buildings/new" element={<BuildingFormPage />} />
+                <Route element={<ProtectedRoute allowedRoles={['org_admin', 'branch_manager']} />}>
+                  <Route path="/buildings/new" element={<BuildingFormPage />} />
+                  <Route path="/buildings/:id/edit" element={<BuildingFormPage />} />
+                </Route>
                 <Route path="/buildings/:id" element={<BuildingDetailPage />} />
-                <Route path="/buildings/:id/edit" element={<BuildingFormPage />} />
 
                 {/* Assessments */}
                 <Route path="/assessments" element={<AssessmentsPage />} />
-                <Route path="/assessments/new" element={<AssessmentFormPage />} />
+                <Route element={<ProtectedRoute allowedRoles={['org_admin', 'branch_manager', 'assessor']} />}>
+                  <Route path="/assessments/new" element={<AssessmentFormPage />} />
+                  <Route path="/assessments/:id/conduct" element={<ConductAssessmentPage />} />
+                </Route>
+                <Route element={<ProtectedRoute allowedRoles={['org_admin', 'branch_manager']} />}>
+                  <Route path="/assessments/:id/edit" element={<AssessmentFormPage />} />
+                </Route>
                 <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
-                <Route path="/assessments/:id/edit" element={<AssessmentFormPage />} />
-                <Route path="/assessments/:id/conduct" element={<ConductAssessmentPage />} />
                 <Route path="/assessments/:assessmentId/elements/:elementId" element={<ElementDetailPage />} />
 
                 {/* Deficiencies */}
@@ -82,7 +88,9 @@ function App() {
                 <Route path="/deficiencies/:id" element={<DeficiencyDetailPage />} />
 
                 <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/users" element={<UsersPage />} />
+                <Route element={<ProtectedRoute allowedRoles={['org_admin', 'branch_manager']} />}>
+                  <Route path="/users" element={<UsersPage />} />
+                </Route>
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Route>

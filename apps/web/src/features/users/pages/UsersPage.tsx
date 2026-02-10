@@ -12,6 +12,7 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import InviteUserDialog from '../components/InviteUserDialog';
 import EditUserDialog from '../components/EditUserDialog';
+import { formatDate } from '../../../lib/date-utils';
 import type { User } from '../../../types';
 
 const columnHelper = createColumnHelper<User>();
@@ -132,7 +133,7 @@ export default function UsersPage() {
       header: 'Created',
       cell: (info) => (
         <span className="text-sm text-slate-500">
-          {new Date(info.getValue()).toLocaleDateString()}
+          {formatDate(info.getValue())}
         </span>
       ),
     }),

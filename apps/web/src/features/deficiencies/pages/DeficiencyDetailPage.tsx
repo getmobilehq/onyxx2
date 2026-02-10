@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../hooks/useAuth';
 import {
   useDeficiency,
   useUpdateDeficiency,
@@ -15,6 +16,7 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import DeficiencyFormDialog from '../../../components/ui/DeficiencyFormDialog';
 import PhotoUploader from '../../../components/ui/PhotoUploader';
 import PhotoGallery from '../../../components/ui/PhotoGallery';
+import { formatDate } from '../../../lib/date-utils';
 import type { DeficiencyFormData } from '../../../types';
 
 function formatCurrency(value: number | null | undefined): string {
@@ -30,6 +32,7 @@ function formatCurrency(value: number | null | undefined): string {
 export default function DeficiencyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isViewer, canEditAssessments } = useAuth();
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -105,19 +108,21 @@ export default function DeficiencyDetailPage() {
             <PriorityBadge priority={deficiency.priority} />
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={() => setShowEditForm(true)} className="btn btn-md btn-secondary">
-            <Pencil className="w-4 h-4 mr-2" />
-            Edit
-          </button>
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="btn btn-md bg-red-50 text-red-600 hover:bg-red-100"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete
-          </button>
-        </div>
+        {!isViewer() && (
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <button onClick={() => setShowEditForm(true)} className="btn btn-md btn-secondary">
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="btn btn-md bg-red-50 text-red-600 hover:bg-red-100"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -240,7 +245,7 @@ export default function DeficiencyDetailPage() {
               <div>
                 <p className="text-xs text-slate-400">Created</p>
                 <p className="text-sm font-medium text-slate-900">
-                  {new Date(deficiency.createdAt).toLocaleDateString()}
+                  {formatDate(deficiency.createdAt)}
                 </p>
               </div>
               {deficiency.createdBy && (
@@ -261,12 +266,14 @@ export default function DeficiencyDetailPage() {
         <h2 className="text-lg font-semibold text-slate-900 mb-4">
           Photos ({photos?.length || 0})
         </h2>
-        <div className="mb-4">
-          <PhotoUploader parentType="deficiency" parentId={id!} />
-        </div>
+        {canEditAssessments() && (
+          <div className="mb-4">
+            <PhotoUploader parentType="deficiency" parentId={id!} />
+          </div>
+        )}
         <PhotoGallery
           photos={photos || []}
-          canEdit
+          canEdit={canEditAssessments()}
           onDelete={async (photoId) => {
             try {
               await deletePhotoMutation.mutateAsync(photoId);

@@ -16,6 +16,7 @@ import { exportPortfolioPDF, exportPortfolioExcel } from '../../../lib/exports/p
 import { exportAssessmentsPDF, exportAssessmentsExcel } from '../../../lib/exports/assessments.export';
 import { exportDeficienciesPDF, exportDeficienciesExcel } from '../../../lib/exports/deficiencies.export';
 import { exportForecastPDF, exportForecastExcel } from '../../../lib/exports/forecast.export';
+import { formatDate } from '../../../lib/date-utils';
 import {
   usePortfolioReport,
   useAssessmentSummaryReport,
@@ -311,7 +312,7 @@ function AssessmentsTab() {
                     <td className="px-4 py-3 text-sm text-slate-600">{a.branch?.name || '—'}</td>
                     <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
                     <td className="px-4 py-3 text-sm text-slate-600 text-right">{a._count?.elements ?? a.totalElements ?? 0}</td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{new Date(a.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{formatDate(a.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -676,7 +677,7 @@ export default function ReportsPage() {
 
       {/* Tabs */}
       <div className="border-b border-slate-200">
-        <nav className="flex gap-6 -mb-px">
+        <nav className="flex gap-6 -mb-px overflow-x-auto">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -684,7 +685,7 @@ export default function ReportsPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-2 px-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   isActive
                     ? 'border-onyx-600 text-onyx-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'

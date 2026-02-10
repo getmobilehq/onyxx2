@@ -20,10 +20,7 @@ export function formatPercent(value: number | null | undefined): string {
   return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
-export function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return 'N/A';
-  return new Date(dateStr).toLocaleDateString('en-US');
-}
+export { formatDate } from './date-utils';
 
 export function todayStr(): string {
   return new Date().toISOString().split('T')[0];

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Eye, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../hooks/useAuth';
 import { useDeficiencies, useDeleteDeficiency } from '../../assessments/api/deficiencies.api';
 import DataTable from '../../../components/ui/DataTable';
 import Pagination from '../../../components/ui/Pagination';
@@ -41,6 +42,7 @@ function formatCurrency(value: number | null | undefined): string {
 
 export default function DeficienciesPage() {
   const navigate = useNavigate();
+  const { isViewer } = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [severity, setSeverity] = useState('');
@@ -145,13 +147,15 @@ export default function DeficienciesPage() {
             >
               <Eye className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setDeleteTarget(deficiency)}
-              className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {!isViewer() && (
+              <button
+                onClick={() => setDeleteTarget(deficiency)}
+                className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         );
       },
@@ -201,7 +205,7 @@ export default function DeficienciesPage() {
         data={deficiencies}
         isLoading={isLoading}
         emptyMessage="No deficiencies found"
-        emptyDescription={search || severity || priority ? 'Try adjusting your filters' : 'Deficiencies are created within assessment elements'}
+        emptyDescription={search || severity || priority ? 'Try adjusting your filters' : 'Deficiencies are tracked when issues are found during assessments.'}
       />
 
       {/* Pagination */}

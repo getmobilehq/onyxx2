@@ -17,6 +17,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   emptyMessage?: string;
   emptyDescription?: string;
+  emptyAction?: React.ReactNode;
 }
 
 export default function DataTable<T>({
@@ -25,6 +26,7 @@ export default function DataTable<T>({
   isLoading,
   emptyMessage = 'No data found',
   emptyDescription,
+  emptyAction,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -46,7 +48,7 @@ export default function DataTable<T>({
   }
 
   if (data.length === 0) {
-    return <EmptyState title={emptyMessage} description={emptyDescription} />;
+    return <EmptyState title={emptyMessage} description={emptyDescription} action={emptyAction} />;
   }
 
   return (

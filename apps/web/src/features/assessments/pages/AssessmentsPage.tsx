@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../hooks/useAuth';
 import { useAssessments, useDeleteAssessment } from '../api/assessments.api';
 import { useBranches } from '../../branches/api/branches.api';
 import DataTable from '../../../components/ui/DataTable';
@@ -11,6 +12,7 @@ import Select from '../../../components/ui/Select';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import FCIBadge from '../../../components/ui/FCIBadge';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import { formatDate } from '../../../lib/date-utils';
 import type { Assessment, AssessmentStatus } from '../../../types';
 
 const columnHelper = createColumnHelper<Assessment>();
@@ -26,6 +28,8 @@ const statusOptions = [
 
 export default function AssessmentsPage() {
   const navigate = useNavigate();
+  const { isViewer, canApproveAssessments } = useAuth();
+  const isManager = canApproveAssessments();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
   const [branchId, setBranchId] = useState('');
@@ -122,7 +126,7 @@ export default function AssessmentsPage() {
     }),
     columnHelper.accessor('updatedAt', {
       header: 'Updated',
-      cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+      cell: (info) => formatDate(info.getValue()),
     }),
     columnHelper.display({
       id: 'actions',
@@ -138,7 +142,7 @@ export default function AssessmentsPage() {
             >
               <Eye className="w-4 h-4" />
             </button>
-            {assessment.status === 'draft' && (
+            {isManager && assessment.status === 'draft' && (
               <button
                 onClick={() => navigate(`/assessments/${assessment.id}/edit`)}
                 className="btn btn-ghost btn-sm p-1.5"
@@ -147,7 +151,7 @@ export default function AssessmentsPage() {
                 <Pencil className="w-4 h-4" />
               </button>
             )}
-            {assessment.status !== 'approved' && (
+            {isManager && assessment.status !== 'approved' && (
               <button
                 onClick={() => setDeleteTarget(assessment)}
                 className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
@@ -172,10 +176,12 @@ export default function AssessmentsPage() {
             {meta ? `${meta.total} assessment${meta.total !== 1 ? 's' : ''} total` : 'Manage facility condition assessments'}
           </p>
         </div>
-        <Link to="/assessments/new" className="btn btn-md btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          New Assessment
-        </Link>
+        {!isViewer() && (
+          <Link to="/assessments/new" className="btn btn-md btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            New Assessment
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -204,7 +210,13 @@ export default function AssessmentsPage() {
         data={assessments}
         isLoading={isLoading}
         emptyMessage="No assessments found"
-        emptyDescription={status || branchId ? 'Try adjusting your filters' : 'Create your first assessment to get started'}
+        emptyDescription={status || branchId ? 'Try adjusting your filters' : 'Create your first assessment to evaluate building conditions.'}
+        emptyAction={!status && !branchId && !isViewer() ? (
+          <Link to="/assessments/new" className="btn btn-sm btn-primary">
+            <Plus className="w-4 h-4 mr-1" />
+            Create Assessment
+          </Link>
+        ) : undefined}
       />
 
       {/* Pagination */}

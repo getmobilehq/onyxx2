@@ -1,16 +1,18 @@
 /**
  * Header Component
- * Top navigation bar with breadcrumbs and user menu
+ * Top navigation bar with mobile hamburger and user menu
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useUIStore } from '../../stores/ui.store';
 import { useLogout } from '../../features/auth/api/auth.api';
-import { Bell, LogOut, User, ChevronDown } from 'lucide-react';
+import { Menu, Bell, LogOut, User, ChevronDown } from 'lucide-react';
 
 const Header = () => {
   const { user } = useAuth();
+  const { isMobile, setMobileMenuOpen } = useUIStore();
   const logout = useLogout();
   const navigate = useNavigate();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -21,12 +23,18 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-fixed h-16 bg-white border-b border-slate-200">
-      <div className="flex items-center justify-between h-full px-6">
-        {/* Breadcrumbs / Page Title */}
+      <div className="flex items-center justify-between h-full px-4 md:px-6">
+        {/* Left Section */}
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-slate-900">
-            {/* This will be dynamic based on route */}
-          </h1>
+          {isMobile && (
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 rounded-md hover:bg-slate-100 transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5 text-slate-600" />
+            </button>
+          )}
         </div>
 
         {/* Right Section */}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../hooks/useAuth';
 import { useBuildings, useDeleteBuilding } from '../api/buildings.api';
 import { useBranches } from '../../branches/api/branches.api';
 import DataTable from '../../../components/ui/DataTable';
@@ -11,12 +12,14 @@ import SearchInput from '../../../components/ui/SearchInput';
 import Select from '../../../components/ui/Select';
 import FCIBadge from '../../../components/ui/FCIBadge';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import { formatDate } from '../../../lib/date-utils';
 import type { Building } from '../../../types';
 
 const columnHelper = createColumnHelper<Building>();
 
 export default function BuildingsPage() {
   const navigate = useNavigate();
+  const { canManageBuildings, isOrgAdmin } = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [branchId, setBranchId] = useState('');
@@ -102,7 +105,7 @@ export default function BuildingsPage() {
       header: 'Last Assessment',
       cell: (info) => {
         const val = info.getValue();
-        return val ? new Date(val).toLocaleDateString() : 'Never';
+        return val ? formatDate(val) : 'Never';
       },
     }),
     columnHelper.display({
@@ -119,20 +122,24 @@ export default function BuildingsPage() {
             >
               <Eye className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => navigate(`/buildings/${building.id}/edit`)}
-              className="btn btn-ghost btn-sm p-1.5"
-              title="Edit"
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setDeleteTarget(building)}
-              className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {canManageBuildings() && (
+              <button
+                onClick={() => navigate(`/buildings/${building.id}/edit`)}
+                className="btn btn-ghost btn-sm p-1.5"
+                title="Edit"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            {isOrgAdmin() && (
+              <button
+                onClick={() => setDeleteTarget(building)}
+                className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         );
       },
@@ -149,10 +156,12 @@ export default function BuildingsPage() {
             {meta ? `${meta.total} building${meta.total !== 1 ? 's' : ''} total` : 'Manage your facility portfolio'}
           </p>
         </div>
-        <Link to="/buildings/new" className="btn btn-md btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          New Building
-        </Link>
+        {canManageBuildings() && (
+          <Link to="/buildings/new" className="btn btn-md btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            New Building
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -180,7 +189,13 @@ export default function BuildingsPage() {
         data={buildings}
         isLoading={isLoading}
         emptyMessage="No buildings found"
-        emptyDescription={search || branchId ? 'Try adjusting your filters' : 'Create your first building to get started'}
+        emptyDescription={search || branchId ? 'Try adjusting your filters' : 'Add your first building to start tracking facility conditions.'}
+        emptyAction={!search && !branchId && canManageBuildings() ? (
+          <Link to="/buildings/new" className="btn btn-sm btn-primary">
+            <Plus className="w-4 h-4 mr-1" />
+            Add Building
+          </Link>
+        ) : undefined}
       />
 
       {/* Pagination */}

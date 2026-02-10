@@ -20,6 +20,7 @@ import StatusBadge from '../../../components/ui/StatusBadge';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import PhotoUploader from '../../../components/ui/PhotoUploader';
 import PhotoGallery from '../../../components/ui/PhotoGallery';
+import { formatDate } from '../../../lib/date-utils';
 
 type Tab = 'overview' | 'assessments' | 'photos';
 
@@ -39,7 +40,7 @@ export default function BuildingDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showDelete, setShowDelete] = useState(false);
 
-  const { canEditAssessments } = useAuth();
+  const { canEditAssessments, canManageBuildings, isOrgAdmin } = useAuth();
   const { data: building, isLoading, error } = useBuilding(id!);
   const { data: stats } = useBuildingStats(id!);
   const { data: assessmentsData } = useBuildingAssessments(id!);
@@ -105,26 +106,30 @@ export default function BuildingDetailPage() {
             <FCIBadge value={building.currentFci} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link to={`/buildings/${id}/edit`} className="btn btn-md btn-outline">
-            <Pencil className="w-4 h-4 mr-2" />
-            Edit
-          </Link>
-          <button onClick={() => setShowDelete(true)} className="btn btn-md btn-danger">
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {canManageBuildings() && (
+            <Link to={`/buildings/${id}/edit`} className="btn btn-md btn-outline">
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit
+            </Link>
+          )}
+          {isOrgAdmin() && (
+            <button onClick={() => setShowDelete(true)} className="btn btn-md btn-danger">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </button>
+          )}
         </div>
       </div>
 
       {/* Tabs */}
       <div className="border-b border-slate-200">
-        <div className="flex gap-6">
+        <div className="flex gap-6 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-onyx-600 text-onyx-600'
                   : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -282,7 +287,7 @@ export default function BuildingDetailPage() {
                         {a.completedElements}/{a.totalElements}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-500">
-                        {new Date(a.createdAt).toLocaleDateString()}
+                        {formatDate(a.createdAt)}
                       </td>
                     </tr>
                   ))}

@@ -39,6 +39,7 @@ import ConditionBadge from '../../../components/ui/ConditionBadge';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import RejectDialog from '../../../components/ui/RejectDialog';
 import UniformatPicker from '../../../components/ui/UniformatPicker';
+import { formatDate } from '../../../lib/date-utils';
 
 type Tab = 'overview' | 'assignees' | 'elements';
 
@@ -101,6 +102,17 @@ export default function AssessmentDetailPage() {
   };
 
   const handleSubmit = async () => {
+    if (!assessment) return;
+    if (assessment.totalElements === 0) {
+      toast.error('Cannot submit: no elements have been added to this assessment.');
+      return;
+    }
+    if (assessment.completedElements === 0) {
+      const confirmed = window.confirm(
+        'No elements have been completed yet. Are you sure you want to submit for review?'
+      );
+      if (!confirmed) return;
+    }
     try {
       await submitMutation.mutateAsync(id!);
       toast.success('Assessment submitted for review');
@@ -209,7 +221,7 @@ export default function AssessmentDetailPage() {
             {assessment.branch && <span>{assessment.branch.name}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Workflow buttons */}
           {assessment.status === 'draft' && (
             <button
@@ -232,7 +244,8 @@ export default function AssessmentDetailPage() {
               </Link>
               <button
                 onClick={handleSubmit}
-                disabled={submitMutation.isPending}
+                disabled={submitMutation.isPending || assessment.totalElements === 0}
+                title={assessment.totalElements === 0 ? 'Add elements before submitting' : undefined}
                 className="btn btn-md btn-outline"
               >
                 <Send className="w-4 h-4 mr-2" />
@@ -261,13 +274,13 @@ export default function AssessmentDetailPage() {
           )}
 
           {/* Edit / Delete */}
-          {canEdit && (
+          {canEdit && isManager && (
             <Link to={`/assessments/${id}/edit`} className="btn btn-md btn-outline">
               <Pencil className="w-4 h-4 mr-2" />
               Edit
             </Link>
           )}
-          {canDelete && (
+          {canDelete && isManager && (
             <button onClick={() => setShowDelete(true)} className="btn btn-md btn-danger">
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
@@ -295,7 +308,7 @@ export default function AssessmentDetailPage() {
             <p className="text-sm font-medium text-emerald-800">Assessment Approved</p>
             {assessment.approvedAt && (
               <p className="text-sm text-emerald-700 mt-1">
-                Approved on {new Date(assessment.approvedAt).toLocaleDateString()}
+                Approved on {formatDate(assessment.approvedAt)}
               </p>
             )}
           </div>
@@ -304,12 +317,12 @@ export default function AssessmentDetailPage() {
 
       {/* Tabs */}
       <div className="border-b border-slate-200">
-        <div className="flex gap-6">
+        <div className="flex gap-6 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-onyx-600 text-onyx-600'
                   : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -351,7 +364,7 @@ export default function AssessmentDetailPage() {
                 <div>
                   <p className="text-sm text-slate-500">Created</p>
                   <p className="text-sm font-medium text-slate-900">
-                    {new Date(assessment.createdAt).toLocaleDateString()}
+                    {formatDate(assessment.createdAt)}
                   </p>
                 </div>
               </div>
@@ -361,7 +374,7 @@ export default function AssessmentDetailPage() {
                   <div>
                     <p className="text-sm text-slate-500">Target Completion</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {new Date(assessment.targetCompletionDate).toLocaleDateString()}
+                      {formatDate(assessment.targetCompletionDate)}
                     </p>
                   </div>
                 </div>
@@ -372,7 +385,7 @@ export default function AssessmentDetailPage() {
                   <div>
                     <p className="text-sm text-slate-500">Started</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {new Date(assessment.startedAt).toLocaleDateString()}
+                      {formatDate(assessment.startedAt)}
                     </p>
                   </div>
                 </div>
@@ -383,7 +396,7 @@ export default function AssessmentDetailPage() {
                   <div>
                     <p className="text-sm text-slate-500">Submitted</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {new Date(assessment.submittedAt).toLocaleDateString()}
+                      {formatDate(assessment.submittedAt)}
                     </p>
                   </div>
                 </div>
