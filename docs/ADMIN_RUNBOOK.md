@@ -354,37 +354,66 @@ WHERE action = 'DELETE' AND created_at > now() - interval '24 hours';
 
 ## 7. Backup & Restore
 
-### Database Backup
+### Automated Backups
+
+The project includes `scripts/backup.sh` which creates compressed PostgreSQL dumps with automatic retention cleanup.
 
 ```bash
-# Full database dump
-docker compose -f docker-compose.prod.yml exec postgres \
-  pg_dump -U onyx onyx_production > backup_$(date +%Y%m%d_%H%M%S).sql
+# Run a backup manually
+./scripts/backup.sh
 
-# Compressed backup
-docker compose -f docker-compose.prod.yml exec postgres \
-  pg_dump -U onyx -Fc onyx_production > backup_$(date +%Y%m%d_%H%M%S).dump
+# Output: backups/onyx_20260210_020000.dump
 ```
 
-### Automated Daily Backups
+The backup script:
+- Creates compressed dumps using `pg_dump -Fc` (custom format)
+- Names files with timestamp: `onyx_YYYYMMDD_HHMMSS.dump`
+- Verifies dump integrity (non-zero size + `pg_restore --list`)
+- Deletes backups older than the retention period
+- Exits non-zero on failure (safe for cron)
 
-Add a cron job on the host:
+### Retention Policy
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BACKUP_RETENTION_DAYS` | `30` | Days to keep backup files |
+| `BACKUP_DIR` | `./backups` | Backup destination directory |
+
+### Automated Daily Backups (Cron)
 
 ```bash
 # crontab -e
-0 2 * * * cd /path/to/onyxx && docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U onyx -Fc onyx_production > /backups/onyx_$(date +\%Y\%m\%d).dump 2>&1 | logger -t onyx-backup
+0 2 * * * cd /path/to/onyxx && ./scripts/backup.sh >> /var/log/onyx-backup.log 2>&1
 ```
 
-### Database Restore
+### Restoring from Backup
+
+Use `scripts/restore.sh` to restore a specific backup or the most recent one:
 
 ```bash
-# From SQL dump
-docker compose -f docker-compose.prod.yml exec -T postgres \
-  psql -U onyx onyx_production < backup_20260210.sql
+# Restore a specific backup
+./scripts/restore.sh backups/onyx_20260210_020000.dump
 
-# From compressed dump
+# Restore the most recent backup
+./scripts/restore.sh --latest
+```
+
+The restore script:
+- Prompts for confirmation before proceeding
+- Runs `pg_restore --clean` to replace existing data
+- Verifies the restore by checking table row counts
+- Shows top tables by row count after restore
+
+### Manual Database Operations
+
+```bash
+# Manual compressed dump (without the backup script)
 docker compose -f docker-compose.prod.yml exec -T postgres \
-  pg_restore -U onyx -d onyx_production --clean backup_20260210.dump
+  pg_dump -U onyx -Fc onyx_production > backup.dump
+
+# Manual restore
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  pg_restore -U onyx -d onyx_production --clean --if-exists < backup.dump
 ```
 
 ### Redis Data
