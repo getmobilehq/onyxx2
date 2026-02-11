@@ -601,12 +601,26 @@ The API applies these headers via Helmet:
 - `Strict-Transport-Security` (when behind HTTPS proxy)
 - Content Security Policy (configured for the web URL)
 
-### JWT Token Security
+### JWT Token Lifecycle
 
-- Tokens are signed with HS256 using the `JWT_SECRET`
-- Token payload includes: `sub` (user ID), `organizationId`, `role`, `email`
-- Tokens are verified on every authenticated request
-- **Never expose `JWT_SECRET`** — rotate if compromised
+The system uses a dual-token strategy:
+
+| Token | Lifetime | Storage | Purpose |
+|-------|----------|---------|---------|
+| **Access token** | 15 minutes | In-memory (JavaScript variable) | API authentication |
+| **Refresh token** | 7 days | httpOnly cookie + hashed in database | Silent access token renewal |
+
+**Refresh flow:**
+
+1. Client makes an API request with an expired access token
+2. API returns `401 Unauthorized`
+3. Client automatically calls `POST /api/v1/auth/refresh` (browser sends httpOnly cookie)
+4. API validates the refresh token hash against the database
+5. API revokes the old refresh token and issues a new one (rotation)
+6. API returns a new access token
+7. Client retries the original request with the new access token
+
+On page reload, the app attempts a silent refresh to restore the session.
 
 ### Rotating JWT Secret
 
@@ -618,17 +632,34 @@ openssl rand -base64 48
 
 # 2. Update .env with new JWT_SECRET
 
-# 3. Restart API (all existing sessions will be invalidated)
+# 3. Restart API (all existing access tokens are immediately invalidated)
 docker compose -f docker-compose.prod.yml restart api
 
-# Users will need to log in again
+# Users' refresh tokens will still work — they'll get new access tokens
+# automatically on their next API call.
+```
+
+### Force Logout All Users
+
+To invalidate all sessions immediately:
+
+```bash
+# 1. Truncate the refresh_tokens table
+docker compose -f docker-compose.prod.yml exec postgres \
+  psql -U onyx -d onyx_production -c "DELETE FROM refresh_tokens;"
+
+# 2. Rotate the JWT secret (invalidates any in-flight access tokens)
+# Update .env with a new JWT_SECRET, then:
+docker compose -f docker-compose.prod.yml restart api
+
+# All users will be redirected to the login page on their next request.
 ```
 
 ### Password Security
 
 - Passwords hashed with bcrypt (12 rounds)
-- Minimum password requirements enforced at registration
-- Password reset tokens expire after 1 hour
+- Minimum 8 characters enforced at registration and password change
+- Password reset tokens are SHA-256 hashed in the database, expire after 1 hour
 
 ### Audit Trail
 

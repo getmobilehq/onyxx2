@@ -3,13 +3,15 @@
  * Root application component with routing
  */
 
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Toaster } from 'react-hot-toast';
+import axios from 'axios';
 import { queryClient } from './lib/query-client';
 import { dexiePersister } from './lib/offline/query-persister';
 import { startSyncWatcher } from './lib/offline/sync-processor';
+import { useAuthStore, setAccessToken } from './stores/auth.store';
 import ErrorBoundary from './components/ErrorBoundary';
 import UpdatePrompt from './components/ui/UpdatePrompt';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -45,9 +47,44 @@ const persistOptions = {
 };
 
 function App() {
+  const { isAuthenticated, clearAuth } = useAuthStore();
+  const [authReady, setAuthReady] = useState(!isAuthenticated);
+
+  // On mount, if the user was previously authenticated, try to refresh the access token
+  // (the in-memory token is lost on page reload but the httpOnly cookie persists)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+    axios
+      .post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true })
+      .then(({ data }) => {
+        const token = data?.data?.token ?? data?.token;
+        if (token) {
+          setAccessToken(token);
+        } else {
+          clearAuth();
+        }
+      })
+      .catch(() => {
+        clearAuth();
+      })
+      .finally(() => {
+        setAuthReady(true);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     startSyncWatcher();
   }, []);
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" message="Restoring session..." />
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>

@@ -13,6 +13,85 @@ import { auditService } from '../services/audit.service.js';
 
 const router = Router();
 
+const ACCESS_TOKEN_EXPIRY = '15m';
+const REFRESH_TOKEN_EXPIRY_DAYS = 7;
+
+/**
+ * Generate a signed JWT access token (15 min expiry)
+ */
+async function generateAccessToken(user: {
+  id: string;
+  organizationId: string;
+  role: string;
+  email: string;
+}): Promise<string> {
+  const secret = new TextEncoder().encode(config.jwtSecret);
+  return new SignJWT({
+    sub: user.id,
+    organizationId: user.organizationId,
+    role: user.role,
+    email: user.email,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(ACCESS_TOKEN_EXPIRY)
+    .sign(secret);
+}
+
+/**
+ * Create a refresh token, store its hash in the database, and return the raw token.
+ * Invalidates any existing refresh tokens for the user (single-session).
+ */
+async function createRefreshToken(userId: string): Promise<{ token: string; expiresAt: Date }> {
+  const rawToken = crypto.randomBytes(48).toString('base64url');
+  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
+
+  // Revoke all existing refresh tokens for this user
+  await prisma.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+
+  // Create new refresh token
+  await prisma.refreshToken.create({
+    data: {
+      token: hashedToken,
+      userId,
+      expiresAt,
+    },
+  });
+
+  return { token: rawToken, expiresAt };
+}
+
+/**
+ * Set the refresh token as an httpOnly cookie
+ */
+function setRefreshCookie(res: Response, token: string, expiresAt: Date): void {
+  res.cookie('refresh_token', token, {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: 'strict',
+    path: '/api/v1/auth',
+    expires: expiresAt,
+  });
+}
+
+/**
+ * Clear the refresh token cookie
+ */
+function clearRefreshCookie(res: Response): void {
+  res.clearCookie('refresh_token', {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: 'strict',
+    path: '/api/v1/auth',
+  });
+}
+
 /**
  * POST /api/v1/auth/login
  * Authenticate user with email and password
@@ -56,18 +135,12 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next) => 
       data: { lastLoginAt: new Date() },
     });
 
-    // Sign JWT
-    const secret = new TextEncoder().encode(config.jwtSecret);
-    const token = await new SignJWT({
-      sub: user.id,
-      organizationId: user.organizationId,
-      role: user.role,
-      email: user.email,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('24h')
-      .sign(secret);
+    // Generate access token (15 min)
+    const accessToken = await generateAccessToken(user);
+
+    // Generate refresh token (7 days) and set as httpOnly cookie
+    const refresh = await createRefreshToken(user.id);
+    setRefreshCookie(res, refresh.token, refresh.expiresAt);
 
     auditService.log({
       organizationId: user.organizationId,
@@ -80,7 +153,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next) => 
     res.json({
       success: true,
       data: {
-        token,
+        token: accessToken,
         user: {
           id: user.id,
           email: user.email,
@@ -93,6 +166,110 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next) => 
           updatedAt: user.updatedAt,
         },
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/auth/refresh
+ * Issue a new access token using a valid refresh token (from httpOnly cookie).
+ * Rotates the refresh token — old one is invalidated, new one issued.
+ */
+router.post('/refresh', async (req: Request, res: Response, next) => {
+  try {
+    const rawToken = req.cookies?.refresh_token;
+
+    if (!rawToken) {
+      throw new UnauthorizedError('No refresh token provided');
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    const storedToken = await prisma.refreshToken.findFirst({
+      where: {
+        token: hashedToken,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            organizationId: true,
+            role: true,
+            email: true,
+            isActive: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!storedToken) {
+      clearRefreshCookie(res);
+      throw new UnauthorizedError('Invalid or expired refresh token');
+    }
+
+    const { user } = storedToken;
+
+    if (!user.isActive || user.deletedAt) {
+      // Revoke the token if user is deactivated
+      await prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date() },
+      });
+      clearRefreshCookie(res);
+      throw new UnauthorizedError('User account is inactive');
+    }
+
+    // Generate new access token
+    const accessToken = await generateAccessToken(user);
+
+    // Rotate refresh token — revoke old, create new
+    const refresh = await createRefreshToken(user.id);
+    setRefreshCookie(res, refresh.token, refresh.expiresAt);
+
+    res.json({
+      success: true,
+      data: {
+        token: accessToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          organizationId: user.organizationId,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/auth/logout
+ * Revoke the refresh token and clear the cookie
+ */
+router.post('/logout', async (req: Request, res: Response, next) => {
+  try {
+    const rawToken = req.cookies?.refresh_token;
+
+    if (rawToken) {
+      const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+      await prisma.refreshToken.updateMany({
+        where: { token: hashedToken, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    }
+
+    clearRefreshCookie(res);
+
+    res.json({
+      success: true,
+      data: { message: 'Logged out successfully' },
     });
   } catch (error) {
     next(error);

@@ -1,15 +1,23 @@
-/**
- * Authentication Store (Zustand)
- * Manages authentication state and user session
- */
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types';
 
+/**
+ * In-memory access token — NOT persisted to localStorage.
+ * The refresh token is stored as an httpOnly cookie by the server.
+ */
+let accessToken: string | null = null;
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
+
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
 
   // Actions
@@ -22,19 +30,16 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
       isAuthenticated: false,
 
       setAuth: (user, token) => {
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        set({ user, token, isAuthenticated: true });
+        setAccessToken(token);
+        set({ user, isAuthenticated: true });
       },
 
       clearAuth: () => {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
-        set({ user: null, token: null, isAuthenticated: false });
+        setAccessToken(null);
+        set({ user: null, isAuthenticated: false });
       },
 
       updateUser: (userData) =>
@@ -46,7 +51,6 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
     }
