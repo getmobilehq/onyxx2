@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import {
   formatDate,
   todayStr,
@@ -19,7 +16,9 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: 'Rejected',
 };
 
-export function exportAssessmentsPDF(data: AssessmentSummaryReport): void {
+export async function exportAssessmentsPDF(data: AssessmentSummaryReport): Promise<void> {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
   let y = pdfHeader(doc, 'Assessment Summary Report');
 
@@ -51,7 +50,8 @@ export function exportAssessmentsPDF(data: AssessmentSummaryReport): void {
   doc.save(`assessment-report-${todayStr()}.pdf`);
 }
 
-export function exportAssessmentsExcel(data: AssessmentSummaryReport): void {
+export async function exportAssessmentsExcel(data: AssessmentSummaryReport): Promise<void> {
+  const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 
   // Status Summary sheet

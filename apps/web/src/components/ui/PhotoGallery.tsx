@@ -143,7 +143,7 @@ export default function PhotoGallery({
           <div className="max-w-4xl max-h-[85vh] px-16" onClick={(e) => e.stopPropagation()}>
             <img
               src={photos[lightboxIndex].url}
-              alt={photos[lightboxIndex].caption || 'Photo'}
+              alt={photos[lightboxIndex].caption || photos[lightboxIndex].originalFilename || 'Photo'}
               className="max-w-full max-h-[80vh] object-contain rounded"
             />
             {photos[lightboxIndex].caption && (

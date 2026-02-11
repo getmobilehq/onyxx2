@@ -89,6 +89,20 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query', '@tanstack/react-query-persist-client'],
+          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'vendor-charts': ['recharts'],
+          'vendor-export': ['jspdf', 'jspdf-autotable', 'xlsx'],
+          'vendor-ui': ['lucide-react', 'react-hot-toast'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

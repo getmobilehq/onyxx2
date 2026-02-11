@@ -3,7 +3,7 @@
  * Root application component with routing
  */
 
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Toaster } from 'react-hot-toast';
@@ -12,41 +12,32 @@ import { dexiePersister } from './lib/offline/query-persister';
 import { startSyncWatcher } from './lib/offline/sync-processor';
 import ErrorBoundary from './components/ErrorBoundary';
 import UpdatePrompt from './components/ui/UpdatePrompt';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
-// Layouts
+// Layouts (eagerly loaded — needed for shell)
 import AppLayout from './components/layouts/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Pages
-import LoginPage from './features/auth/pages/LoginPage';
-import AcceptInvitePage from './features/auth/pages/AcceptInvitePage';
-import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
-import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
-import DashboardPage from './pages/DashboardPage';
-import NotFoundPage from './pages/NotFoundPage';
-
-// Buildings
-import BuildingsPage from './features/buildings/pages/BuildingsPage';
-import BuildingDetailPage from './features/buildings/pages/BuildingDetailPage';
-import BuildingFormPage from './features/buildings/pages/BuildingFormPage';
-
-// Assessments
-import AssessmentsPage from './features/assessments/pages/AssessmentsPage';
-import AssessmentDetailPage from './features/assessments/pages/AssessmentDetailPage';
-import AssessmentFormPage from './features/assessments/pages/AssessmentFormPage';
-import ElementDetailPage from './features/assessments/pages/ElementDetailPage';
-import ConductAssessmentPage from './features/assessments/pages/ConductAssessmentPage';
-
-// Deficiencies
-import DeficienciesPage from './features/deficiencies/pages/DeficienciesPage';
-import DeficiencyDetailPage from './features/deficiencies/pages/DeficiencyDetailPage';
-
-// Reports
-import ReportsPage from './features/reports/pages/ReportsPage';
-
-// Users & Settings
-import UsersPage from './features/users/pages/UsersPage';
-import SettingsPage from './features/settings/pages/SettingsPage';
+// Lazy-loaded pages
+const LoginPage = lazy(() => import('./features/auth/pages/LoginPage'));
+const AcceptInvitePage = lazy(() => import('./features/auth/pages/AcceptInvitePage'));
+const ForgotPasswordPage = lazy(() => import('./features/auth/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const BuildingsPage = lazy(() => import('./features/buildings/pages/BuildingsPage'));
+const BuildingDetailPage = lazy(() => import('./features/buildings/pages/BuildingDetailPage'));
+const BuildingFormPage = lazy(() => import('./features/buildings/pages/BuildingFormPage'));
+const AssessmentsPage = lazy(() => import('./features/assessments/pages/AssessmentsPage'));
+const AssessmentDetailPage = lazy(() => import('./features/assessments/pages/AssessmentDetailPage'));
+const AssessmentFormPage = lazy(() => import('./features/assessments/pages/AssessmentFormPage'));
+const ElementDetailPage = lazy(() => import('./features/assessments/pages/ElementDetailPage'));
+const ConductAssessmentPage = lazy(() => import('./features/assessments/pages/ConductAssessmentPage'));
+const DeficienciesPage = lazy(() => import('./features/deficiencies/pages/DeficienciesPage'));
+const DeficiencyDetailPage = lazy(() => import('./features/deficiencies/pages/DeficiencyDetailPage'));
+const ReportsPage = lazy(() => import('./features/reports/pages/ReportsPage'));
+const UsersPage = lazy(() => import('./features/users/pages/UsersPage'));
+const SettingsPage = lazy(() => import('./features/settings/pages/SettingsPage'));
 
 const persistOptions = {
   persister: dexiePersister,
@@ -61,9 +52,20 @@ function App() {
   return (
     <ErrorBoundary>
       <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            ariaProps: { role: 'status', 'aria-live': 'polite' },
+          }}
+        />
         <UpdatePrompt />
         <BrowserRouter>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" message="Loading..." />
+            </div>
+          }>
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
@@ -114,6 +116,7 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </PersistQueryClientProvider>
     </ErrorBoundary>

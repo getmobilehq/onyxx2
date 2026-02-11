@@ -9,7 +9,7 @@ export default function OfflineBanner() {
   // Online but syncing pending items
   if (isOnline && pendingSyncCount > 0) {
     return (
-      <div className="bg-amber-500 text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-2">
+      <div className="bg-amber-500 text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-2" role="status" aria-live="polite">
         <RefreshCw className="w-4 h-4 animate-spin" />
         <span>Syncing {pendingSyncCount} pending {pendingSyncCount === 1 ? 'change' : 'changes'}...</span>
       </div>
@@ -18,7 +18,7 @@ export default function OfflineBanner() {
 
   // Offline
   return (
-    <div className="bg-red-600 text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-2">
+    <div className="bg-red-600 text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-2" role="alert" aria-live="assertive">
       <WifiOff className="w-4 h-4" />
       <span>You are offline — viewing cached data</span>
       {pendingSyncCount > 0 && (

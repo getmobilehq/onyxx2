@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import {
   formatCurrency,
   formatNumber,
@@ -12,7 +9,9 @@ import {
 } from '../export-utils';
 import type { PortfolioReport } from '../../types';
 
-export function exportPortfolioPDF(data: PortfolioReport): void {
+export async function exportPortfolioPDF(data: PortfolioReport): Promise<void> {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
   let y = pdfHeader(doc, 'Building Portfolio Report');
 
@@ -44,7 +43,8 @@ export function exportPortfolioPDF(data: PortfolioReport): void {
   doc.save(`portfolio-report-${todayStr()}.pdf`);
 }
 
-export function exportPortfolioExcel(data: PortfolioReport): void {
+export async function exportPortfolioExcel(data: PortfolioReport): Promise<void> {
+  const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 
   // Summary sheet

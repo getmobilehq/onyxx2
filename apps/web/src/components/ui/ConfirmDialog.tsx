@@ -1,5 +1,5 @@
-import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -20,26 +20,36 @@ export default function ConfirmDialog({
   confirmLabel = 'Delete',
   isLoading,
 }: ConfirmDialogProps) {
+  const dialogRef = useFocusTrap(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-modal flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 animate-scale-in">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-message"
+        className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 animate-scale-in"
+      >
         <button
           onClick={onClose}
           className="absolute top-3 right-3 p-1 hover:bg-slate-100 rounded"
+          aria-label="Close dialog"
         >
           <X className="w-4 h-4 text-slate-400" />
         </button>
 
         <div className="flex items-start gap-4">
           <div className="p-2 rounded-full bg-red-100">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <AlertTriangle className="w-5 h-5 text-red-600" aria-hidden="true" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-            <p className="mt-2 text-sm text-slate-600">{message}</p>
+            <h3 id="confirm-dialog-title" className="text-lg font-semibold text-slate-900">{title}</h3>
+            <p id="confirm-dialog-message" className="mt-2 text-sm text-slate-600">{message}</p>
           </div>
         </div>
 

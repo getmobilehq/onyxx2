@@ -70,6 +70,8 @@ model User {
   auditLogs           AuditLog[]
 
   @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([isActive])
   @@map("users")
 }
 
@@ -205,6 +207,8 @@ model Assessment {
   @@index([organizationId])
   @@index([buildingId])
   @@index([status])
+  @@index([branchId])
+  @@index([createdById])
   @@map("assessments")
 }
 
@@ -357,6 +361,7 @@ model Deficiency {
 
   @@index([assessmentElementId])
   @@index([priority])
+  @@index([severity])
   @@map("deficiencies")
 }
 

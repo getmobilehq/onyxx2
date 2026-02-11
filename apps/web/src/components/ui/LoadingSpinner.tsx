@@ -1,4 +1,3 @@
-import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface LoadingSpinnerProps {
@@ -14,8 +13,8 @@ const sizeClasses = {
 
 export default function LoadingSpinner({ size = 'md', message }: LoadingSpinnerProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-8">
-      <Loader2 className={`${sizeClasses[size]} animate-spin text-onyx-600`} />
+    <div className="flex flex-col items-center justify-center gap-2 py-8" role="status" aria-label={message || 'Loading'}>
+      <Loader2 className={`${sizeClasses[size]} animate-spin text-onyx-600`} aria-hidden="true" />
       {message && <p className="text-sm text-slate-500">{message}</p>}
     </div>
   );

@@ -27,6 +27,12 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-onyx-600 focus:text-white focus:rounded-md focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <Sidebar />
 
       <div
@@ -37,7 +43,7 @@ const AppLayout = () => {
         <Header />
         <OfflineBanner />
 
-        <main className="p-4 md:p-6">
+        <main id="main-content" className="p-4 md:p-6">
           <Outlet />
         </main>
       </div>

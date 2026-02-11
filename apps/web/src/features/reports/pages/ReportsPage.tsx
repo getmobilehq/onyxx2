@@ -72,9 +72,9 @@ function PortfolioTab() {
 
   const { buildings, summary } = data;
 
-  const handleExport = (fn: () => void, label: string) => {
+  const handleExport = async (fn: () => Promise<void>, label: string) => {
     try {
-      fn();
+      await fn();
       toast.success(`${label} downloaded`);
     } catch {
       toast.error(`Failed to export ${label}`);
@@ -223,9 +223,9 @@ function AssessmentsTab() {
 
   const { assessments, statusSummary } = data;
 
-  const handleExport = (fn: () => void, label: string) => {
+  const handleExport = async (fn: () => Promise<void>, label: string) => {
     try {
-      fn();
+      await fn();
       toast.success(`${label} downloaded`);
     } catch {
       toast.error(`Failed to export ${label}`);
@@ -346,9 +346,9 @@ function DeficienciesTab() {
   const { summary, byPriority, bySeverity } = data;
   const priorityOrder = ['immediate', 'short_term', 'medium_term', 'long_term'];
 
-  const handleExport = (fn: () => void, label: string) => {
+  const handleExport = async (fn: () => Promise<void>, label: string) => {
     try {
-      fn();
+      await fn();
       toast.success(`${label} downloaded`);
     } catch {
       toast.error(`Failed to export ${label}`);
@@ -495,9 +495,9 @@ function ForecastTab() {
 
   const { forecast, totalCost } = data;
 
-  const handleExport = (fn: () => void, label: string) => {
+  const handleExport = async (fn: () => Promise<void>, label: string) => {
     try {
-      fn();
+      await fn();
       toast.success(`${label} downloaded`);
     } catch {
       toast.error(`Failed to export ${label}`);

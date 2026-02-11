@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X, AlertTriangle } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import {
   deficiencySchema,
   type DeficiencySchemaType,
@@ -84,23 +85,31 @@ export default function DeficiencyFormDialog({
     onClose();
   };
 
+  const dialogRef = useFocusTrap(isOpen, handleClose);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-modal flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col animate-scale-in">
+      <div className="fixed inset-0 bg-black/50" onClick={handleClose} aria-hidden="true" />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deficiency-dialog-title"
+        className="relative bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col animate-scale-in"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-full bg-amber-100">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              <AlertTriangle className="w-5 h-5 text-amber-600" aria-hidden="true" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 id="deficiency-dialog-title" className="text-lg font-semibold text-slate-900">
               {isEdit ? 'Edit Deficiency' : 'Add Deficiency'}
             </h3>
           </div>
-          <button onClick={handleClose} className="p-1 hover:bg-slate-100 rounded" disabled={isLoading}>
+          <button onClick={handleClose} className="p-1 hover:bg-slate-100 rounded" disabled={isLoading} aria-label="Close dialog">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>

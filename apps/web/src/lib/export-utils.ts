@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import type jsPDF from 'jspdf';
 
 export function formatCurrency(value: number | null | undefined): string {
   if (value == null) return 'N/A';

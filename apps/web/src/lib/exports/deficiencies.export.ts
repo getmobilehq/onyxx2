@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import {
   formatCurrency,
   todayStr,
@@ -24,7 +21,9 @@ const PRIORITY_LABELS: Record<string, string> = {
   long_term: 'Long Term',
 };
 
-export function exportDeficienciesPDF(data: DeficiencySummaryReport): void {
+export async function exportDeficienciesPDF(data: DeficiencySummaryReport): Promise<void> {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
   let y = pdfHeader(doc, 'Deficiency Summary Report');
 
@@ -81,7 +80,8 @@ export function exportDeficienciesPDF(data: DeficiencySummaryReport): void {
   doc.save(`deficiency-report-${todayStr()}.pdf`);
 }
 
-export function exportDeficienciesExcel(data: DeficiencySummaryReport): void {
+export async function exportDeficienciesExcel(data: DeficiencySummaryReport): Promise<void> {
+  const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 
   // Summary sheet

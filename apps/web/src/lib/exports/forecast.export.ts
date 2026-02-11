@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import {
   formatCurrency,
   todayStr,
@@ -17,7 +14,9 @@ const PRIORITY_LABELS: Record<string, string> = {
   long_term: 'Long Term',
 };
 
-export function exportForecastPDF(data: CapitalForecastReport): void {
+export async function exportForecastPDF(data: CapitalForecastReport): Promise<void> {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
   let y = pdfHeader(doc, '10-Year Capital Forecast');
 
@@ -76,7 +75,8 @@ export function exportForecastPDF(data: CapitalForecastReport): void {
   doc.save(`capital-forecast-${todayStr()}.pdf`);
 }
 
-export function exportForecastExcel(data: CapitalForecastReport): void {
+export async function exportForecastExcel(data: CapitalForecastReport): Promise<void> {
+  const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 
   // Year Summary sheet

@@ -62,6 +62,15 @@ export default function DataTable<T>({
                   <th
                     key={header.id}
                     className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider"
+                    aria-sort={
+                      header.column.getIsSorted() === 'asc'
+                        ? 'ascending'
+                        : header.column.getIsSorted() === 'desc'
+                          ? 'descending'
+                          : header.column.getCanSort()
+                            ? 'none'
+                            : undefined
+                    }
                   >
                     {header.isPlaceholder ? null : (
                       <button
