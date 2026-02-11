@@ -350,6 +350,50 @@ SELECT * FROM audit_logs
 WHERE action = 'DELETE' AND created_at > now() - interval '24 hours';
 ```
 
+### Sentry Error Tracking
+
+Sentry provides real-time error tracking, performance monitoring, and session replay. It is **optional** — the app works without it.
+
+**Setup:**
+
+1. Create a Sentry account at [sentry.io](https://sentry.io)
+2. Create two projects: one for the API (Node.js), one for the Web (React)
+3. Add the following environment variables:
+
+```bash
+# API (apps/api/.env or production .env)
+SENTRY_DSN=https://xxxxx@o123.ingest.sentry.io/456
+
+# Web (build-time variables)
+VITE_SENTRY_DSN=https://xxxxx@o123.ingest.sentry.io/789
+
+# Source map upload (CI/CD only)
+SENTRY_AUTH_TOKEN=sntrys_xxxxx
+SENTRY_ORG=your-org
+SENTRY_PROJECT_WEB=onyx-web
+```
+
+**Sampling rates (production defaults):**
+
+| Setting | API | Web |
+|---------|-----|-----|
+| Transaction traces | 20% | 20% |
+| Profiling | 10% | N/A |
+| Session replay | N/A | 5% |
+| Error replay | N/A | 50% |
+
+To adjust sampling, modify `tracesSampleRate` in `apps/api/src/lib/sentry.ts` or `apps/web/src/main.tsx`.
+
+**What's tracked:**
+- All unhandled exceptions (API + frontend)
+- React component errors (via ErrorBoundary)
+- API request performance (response times, status codes)
+- Frontend page loads and navigation timing
+- User context (ID, email, role) attached to all events
+- Organization ID tagged on API transactions
+
+**Sentry Dashboard:** `https://YOUR-ORG.sentry.io`
+
 ---
 
 ## 7. Backup & Restore

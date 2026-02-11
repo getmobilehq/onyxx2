@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import * as Sentry from '@sentry/react';
 import type { User } from '../types';
 
 /**
@@ -34,11 +35,13 @@ export const useAuthStore = create<AuthState>()(
 
       setAuth: (user, token) => {
         setAccessToken(token);
+        Sentry.setUser({ id: user.id, email: user.email });
         set({ user, isAuthenticated: true });
       },
 
       clearAuth: () => {
         setAccessToken(null);
+        Sentry.setUser(null);
         set({ user: null, isAuthenticated: false });
       },
 
