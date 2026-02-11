@@ -692,19 +692,58 @@ LIMIT 50;
 
 ### Updating the Application
 
+Use the zero-downtime deployment script:
+
 ```bash
-# 1. Pull latest code
+# Deploy current HEAD (after git pull)
 git pull origin main
+./scripts/deploy.sh
 
-# 2. Rebuild and restart
-docker compose -f docker-compose.prod.yml up -d --build
-
-# 3. Run any new migrations
-docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
-
-# 4. Verify health
-curl http://localhost/health
+# Deploy a specific commit or tag
+./scripts/deploy.sh v1.2.0
+./scripts/deploy.sh abc1234
 ```
+
+The deploy script:
+1. Builds new Docker images
+2. Starts the new API container (start-first strategy)
+3. Health-checks the new container (60s timeout)
+4. Automatically rolls back if the health check fails
+5. Deploys the web container
+6. Runs pending database migrations
+7. Cleans up old images
+
+### Deployment Checklist
+
+**Pre-deploy:**
+- [ ] Verify target commit on staging
+- [ ] Check for pending database migrations: `npx prisma migrate status`
+- [ ] Create a database backup: `./scripts/backup.sh`
+
+**Deploy:**
+- [ ] Run `./scripts/deploy.sh`
+- [ ] Monitor logs: `docker compose -f docker-compose.prod.yml logs -f api`
+
+**Verify:**
+- [ ] Health endpoint: `curl http://localhost/health`
+- [ ] Login and basic workflow test
+- [ ] Check error logs for new errors
+
+**If issues arise:**
+- [ ] Rollback: `./scripts/rollback.sh latest`
+
+### Rollback Procedure
+
+```bash
+# Rollback to the previous commit
+./scripts/rollback.sh latest
+
+# Rollback to a specific version
+./scripts/rollback.sh abc1234
+./scripts/rollback.sh v1.1.0
+```
+
+The rollback script checks out the target commit, rebuilds images, deploys, and verifies health. After rollback, run `git checkout main` to return to the latest code.
 
 ### Cleaning Up Docker Resources
 
