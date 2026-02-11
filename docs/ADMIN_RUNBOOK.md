@@ -810,3 +810,74 @@ Docker manages log rotation. Configure in `/etc/docker/daemon.json`:
 - [ ] Check Docker image updates: `docker compose -f docker-compose.prod.yml pull`
 - [ ] Review rate limiting metrics (Redis keys)
 - [ ] Verify backup restore works (test restore to a separate database)
+
+---
+
+## 12. Performance Baseline
+
+### Prerequisites
+
+Install [k6](https://k6.io/docs/getting-started/installation/) (load testing tool):
+
+```bash
+# macOS
+brew install k6
+
+# Linux (snap)
+sudo snap install k6
+
+# Docker (no install needed)
+docker run --rm -i grafana/k6 run - <tests/load/smoke.js
+```
+
+### Running Load Tests
+
+Use the load test runner script:
+
+```bash
+# Smoke test (default) — 1 user, 1 minute
+./scripts/load-test.sh --smoke
+
+# Average load — 50 users, 5 minutes
+./scripts/load-test.sh --average
+
+# Stress test — ramp to 200 users, 10 minutes
+./scripts/load-test.sh --stress
+
+# Test against a specific URL
+BASE_URL=https://staging.example.com ./scripts/load-test.sh --average
+```
+
+Results are saved to `tests/load/results/` with timestamped filenames.
+
+### Target Thresholds
+
+| Metric | Smoke/Average | Stress |
+|--------|--------------|--------|
+| P95 response time | < 200ms | < 500ms |
+| P99 response time | < 500ms | < 1000ms |
+| Error rate | < 1% | < 5% |
+
+### Test Scenarios
+
+| Scenario | Users | Duration | Purpose |
+|----------|-------|----------|---------|
+| **smoke** | 1 | 1 min | Sanity check all endpoints respond |
+| **average** | 50 | 5 min | Typical Branch Manager + Assessor workload |
+| **stress** | 10 → 200 | 10 min | Find the breaking point |
+
+### Endpoints Tested
+
+- `POST /api/v1/auth/login` — Authentication
+- `GET /api/v1/buildings` — Building list (Branch Manager primary view)
+- `GET /api/v1/assessments` — Assessment list
+- `GET /api/v1/assessments/:id` — Assessment detail
+- `GET /api/v1/dashboard/stats` — Dashboard (Org Admin/Executive view)
+- `GET /api/v1/auth/me` — Auth verification
+
+### Important Notes
+
+- **Never run load tests against production.** Use a staging environment.
+- Run `./scripts/backup.sh` before testing against staging.
+- The smoke test is a good pre-deployment sanity check.
+- Compare results over time to detect performance regressions.
