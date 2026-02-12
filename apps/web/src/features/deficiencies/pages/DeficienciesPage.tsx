@@ -69,8 +69,9 @@ export default function DeficienciesPage() {
       await deleteMutation.mutateAsync(deleteTarget.id);
       toast.success(`"${deleteTarget.title}" deleted successfully`);
       setDeleteTarget(null);
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to delete deficiency');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete deficiency';
+      toast.error(message);
     }
   };
 
@@ -143,17 +144,17 @@ export default function DeficienciesPage() {
             <button
               onClick={() => navigate(`/deficiencies/${deficiency.id}`)}
               className="btn btn-ghost btn-sm p-1.5"
-              title="View"
+              aria-label={`View deficiency: ${deficiency.title}`}
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-4 h-4" aria-hidden="true" />
             </button>
             {!isViewer() && (
               <button
                 onClick={() => setDeleteTarget(deficiency)}
                 className="btn btn-ghost btn-sm p-1.5 text-red-600 hover:bg-red-50"
-                title="Delete"
+                aria-label={`Delete deficiency: ${deficiency.title}`}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
           </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function InviteUserDialog({ isOpen, onClose }: InviteUserDialogPr
   const inviteMutation = useInviteUser();
   const { data: branchesData } = useBranches();
   const branches = branchesData?.data || [];
+  const [selectedBranchIds, setSelectedBranchIds] = useState<Set<string>>(new Set());
 
   const {
     register,
@@ -36,11 +38,21 @@ export default function InviteUserDialog({ isOpen, onClose }: InviteUserDialogPr
 
   if (!isOpen) return null;
 
+  const toggleBranch = (branchId: string) => {
+    setSelectedBranchIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(branchId)) {
+        next.delete(branchId);
+      } else {
+        next.add(branchId);
+      }
+      return next;
+    });
+  };
+
   const onSubmit = async (formData: InviteUserSchemaType) => {
     try {
-      // Get selected branches
-      const checkboxes = document.querySelectorAll<HTMLInputElement>('input[name="branchIds"]:checked');
-      const branchIds = Array.from(checkboxes).map((cb) => cb.value);
+      const branchIds = Array.from(selectedBranchIds);
 
       const cleaned: Record<string, unknown> = { email: formData.email, role: formData.role };
       if (formData.firstName) cleaned.firstName = formData.firstName;
@@ -51,20 +63,27 @@ export default function InviteUserDialog({ isOpen, onClose }: InviteUserDialogPr
       await inviteMutation.mutateAsync(cleaned as any);
       toast.success('User invited successfully');
       reset();
+      setSelectedBranchIds(new Set());
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to invite user');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to invite user';
+      toast.error(message);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="invite-dialog-title"
+        className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6"
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Invite User</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-slate-100">
-            <X className="w-5 h-5 text-slate-500" />
+          <h2 id="invite-dialog-title" className="text-lg font-semibold text-slate-900">Invite User</h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-slate-100" aria-label="Close dialog">
+            <X className="w-5 h-5 text-slate-500" aria-hidden="true" />
           </button>
         </div>
 
@@ -95,19 +114,24 @@ export default function InviteUserDialog({ isOpen, onClose }: InviteUserDialogPr
           </FormField>
 
           {branches.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <fieldset>
+              <legend className="block text-sm font-medium text-slate-700 mb-2">
                 Assign to Branches
-              </label>
+              </legend>
               <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 rounded-md p-3">
                 {branches.map((branch) => (
-                  <label key={branch.id} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" name="branchIds" value={branch.id} className="rounded" />
+                  <label key={branch.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedBranchIds.has(branch.id)}
+                      onChange={() => toggleBranch(branch.id)}
+                      className="rounded"
+                    />
                     <span className="text-slate-700">{branch.name}</span>
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">

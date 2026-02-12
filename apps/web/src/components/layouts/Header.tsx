@@ -45,8 +45,7 @@ const Header = () => {
             className="relative p-2 rounded-md hover:bg-slate-50 transition-colors"
             aria-label="Notifications"
           >
-            <Bell className="w-5 h-5 text-slate-600" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+            <Bell className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
 
           {/* Sync Status */}
@@ -57,6 +56,9 @@ const Header = () => {
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50 transition-colors"
+              aria-haspopup="true"
+              aria-expanded={isUserMenuOpen}
+              aria-label="User menu"
             >
               <div className="w-8 h-8 rounded-full bg-onyx-100 flex items-center justify-center text-onyx-700 font-semibold text-sm">
                 {user?.firstName?.[0]}
@@ -70,7 +72,7 @@ const Header = () => {
                   {user?.role.replace('_', ' ')}
                 </p>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <ChevronDown className="w-4 h-4 text-slate-400" aria-hidden="true" />
             </button>
 
             {/* Dropdown Menu */}
@@ -79,6 +81,7 @@ const Header = () => {
                 <div
                   className="fixed inset-0 z-dropdown"
                   onClick={() => setIsUserMenuOpen(false)}
+                  aria-hidden="true"
                 />
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-dropdown">
                   <div className="px-4 py-3 border-b border-slate-200">

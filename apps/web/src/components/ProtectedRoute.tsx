@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types';
 
@@ -33,9 +33,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
           <p className="text-slate-600 mb-6">
             You don't have permission to access this page.
           </p>
-          <a href="/dashboard" className="btn btn-primary btn-md">
+          <Link to="/dashboard" className="btn btn-primary btn-md">
             Go to Dashboard
-          </a>
+          </Link>
         </div>
       </div>
     );

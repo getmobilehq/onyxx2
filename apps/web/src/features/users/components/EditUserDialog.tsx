@@ -54,7 +54,8 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
 
   if (!isOpen || !user) return null;
 
-  const assignedBranchIds = new Set((userBranches || []).map((b: any) => b.id));
+  const branchList = Array.isArray(userBranches) ? userBranches : [];
+  const assignedBranchIds = new Set(branchList.map((b: { id: string }) => b.id));
   const availableBranches = allBranches.filter((b) => !assignedBranchIds.has(b.id));
 
   const onSubmit = async (formData: UpdateUserSchemaType) => {
@@ -95,12 +96,17 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-user-dialog-title"
+        className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6"
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Edit User</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-slate-100">
-            <X className="w-5 h-5 text-slate-500" />
+          <h2 id="edit-user-dialog-title" className="text-lg font-semibold text-slate-900">Edit User</h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-slate-100" aria-label="Close dialog">
+            <X className="w-5 h-5 text-slate-500" aria-hidden="true" />
           </button>
         </div>
 
@@ -131,17 +137,18 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
           {/* Branch Assignments */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Branches</label>
-            {userBranches && (userBranches as any[]).length > 0 ? (
+            {branchList.length > 0 ? (
               <div className="space-y-1 mb-2">
-                {(userBranches as any[]).map((branch: any) => (
+                {branchList.map((branch: { id: string; name: string }) => (
                   <div key={branch.id} className="flex items-center justify-between bg-slate-50 rounded px-3 py-1.5">
                     <span className="text-sm text-slate-700">{branch.name}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveBranch(branch.id)}
                       className="p-1 text-slate-400 hover:text-red-500"
+                      aria-label={`Remove branch ${branch.name}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 ))}

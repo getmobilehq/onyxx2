@@ -92,6 +92,7 @@ const Sidebar = () => {
         <div
           className="fixed inset-0 z-fixed bg-black/50 transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -113,6 +114,7 @@ const Sidebar = () => {
               onClick={toggleSidebar}
               className="p-2 rounded-md hover:bg-slate-100 transition-colors"
               aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              aria-expanded={isSidebarOpen}
             >
               <ChevronLeft
                 className={`w-5 h-5 text-slate-600 transition-transform ${
@@ -124,7 +126,7 @@ const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2" aria-label="Main navigation">
           {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -139,8 +141,9 @@ const Sidebar = () => {
                       : 'text-slate-700 hover:bg-slate-50'
                   } ${!showLabels ? 'justify-center' : ''}`
                 }
+                aria-label={!showLabels ? item.label : undefined}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
+                <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 {showLabels && <span>{item.label}</span>}
               </NavLink>
             );
