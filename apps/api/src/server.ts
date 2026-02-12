@@ -14,6 +14,9 @@ initSentry();
 
 const app = express();
 
+// Trust first proxy for correct req.ip behind reverse proxy / load balancer
+app.set('trust proxy', 1);
+
 // Sentry request + tracing handlers (must be first middleware)
 if (config.sentryDsn) {
   Sentry.setupExpressErrorHandler(app);

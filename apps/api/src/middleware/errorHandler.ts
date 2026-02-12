@@ -5,18 +5,31 @@ import { AppError } from '../lib/errors.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/index.js';
 
+const SENSITIVE_FIELDS = ['password', 'currentPassword', 'newPassword', 'token', 'refreshToken'];
+
+function sanitizeBody(body: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (!body || typeof body !== 'object') return body;
+  const sanitized = { ...body };
+  for (const field of SENSITIVE_FIELDS) {
+    if (field in sanitized) {
+      sanitized[field] = '[REDACTED]';
+    }
+  }
+  return sanitized;
+}
+
 export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
   _next: NextFunction,
 ) {
-  // Log error
+  // Log error with sensitive fields redacted
   logger.error({
     err,
     path: req.path,
     method: req.method,
-    body: req.body,
+    body: sanitizeBody(req.body),
     query: req.query,
   }, 'Request error');
 

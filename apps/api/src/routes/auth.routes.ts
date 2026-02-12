@@ -10,11 +10,34 @@ import { userService } from '../services/user.service.js';
 import { emailService } from '../lib/email.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 import { auditService } from '../services/audit.service.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
+
+/**
+ * Validate password complexity: min 8 chars, uppercase, lowercase, number, special char
+ */
+function validatePasswordComplexity(password: string): string | null {
+  if (!password || password.length < 8) {
+    return 'Password must be at least 8 characters';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one number';
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return 'Password must contain at least one special character';
+  }
+  return null;
+}
 
 /**
  * Generate a signed JWT access token (15 min expiry)
@@ -208,6 +231,12 @@ router.post('/refresh', async (req: Request, res: Response, next) => {
     });
 
     if (!storedToken) {
+      logger.warn({
+        action: 'auth.refresh_failed',
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        reason: 'invalid_or_expired_token',
+      }, 'Failed refresh token attempt');
       clearRefreshCookie(res);
       throw new UnauthorizedError('Invalid or expired refresh token');
     }
@@ -259,10 +288,26 @@ router.post('/logout', async (req: Request, res: Response, next) => {
     if (rawToken) {
       const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
+      // Look up the token to get user info for audit logging
+      const storedToken = await prisma.refreshToken.findFirst({
+        where: { token: hashedToken, revokedAt: null },
+        select: { userId: true, user: { select: { organizationId: true } } },
+      });
+
       await prisma.refreshToken.updateMany({
         where: { token: hashedToken, revokedAt: null },
         data: { revokedAt: new Date() },
       });
+
+      if (storedToken) {
+        auditService.log({
+          organizationId: storedToken.user.organizationId,
+          userId: storedToken.userId,
+          action: 'auth.logout',
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+        });
+      }
     }
 
     clearRefreshCookie(res);
@@ -288,8 +333,9 @@ router.post('/accept-invite/:token', authLimiter, async (req: Request, res: Resp
     if (!firstName || !lastName) {
       throw new ValidationError('First name and last name are required');
     }
-    if (!password || password.length < 8) {
-      throw new ValidationError('Password is required and must be at least 8 characters');
+    const pwError = validatePasswordComplexity(password);
+    if (pwError) {
+      throw new ValidationError(pwError);
     }
 
     const user = await userService.acceptInvite(token, { firstName, lastName, password });
@@ -365,8 +411,9 @@ router.post('/reset-password/:token', authLimiter, async (req: Request, res: Res
     const { token } = req.params;
     const { password } = req.body;
 
-    if (!password || password.length < 8) {
-      throw new ValidationError('Password is required and must be at least 8 characters');
+    const pwError = validatePasswordComplexity(password);
+    if (pwError) {
+      throw new ValidationError(pwError);
     }
 
     // Hash incoming token before querying
@@ -436,7 +483,7 @@ router.get('/me', authenticate, async (req: Request, res: Response, next) => {
  * POST /api/v1/auth/change-password
  * Change password for the authenticated user
  */
-router.post('/change-password', authenticate, async (req: Request, res: Response, next) => {
+router.post('/change-password', authenticate, authLimiter, async (req: Request, res: Response, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user!.id;
@@ -444,8 +491,9 @@ router.post('/change-password', authenticate, async (req: Request, res: Response
     if (!currentPassword || !newPassword) {
       throw new ValidationError('Current password and new password are required');
     }
-    if (newPassword.length < 8) {
-      throw new ValidationError('New password must be at least 8 characters');
+    const pwError = validatePasswordComplexity(newPassword);
+    if (pwError) {
+      throw new ValidationError(pwError);
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -456,6 +504,12 @@ router.post('/change-password', authenticate, async (req: Request, res: Response
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
       throw new UnauthorizedError('Current password is incorrect');
+    }
+
+    // Prevent reuse — new password must differ from current
+    const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+    if (isSamePassword) {
+      throw new ValidationError('New password must be different from current password');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);

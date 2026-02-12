@@ -96,12 +96,13 @@ export class UserService {
       throw new ConflictError('User with this email already exists');
     }
 
-    // Generate invite token
-    const inviteToken = crypto.randomBytes(32).toString('hex');
+    // Generate invite token — store hash, send raw via email
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
     const inviteExpiresAt = new Date();
     inviteExpiresAt.setDate(inviteExpiresAt.getDate() + 7); // 7 days
 
-    // Create user
+    // Create user with hashed invite token
     const user = await prisma.user.create({
       data: {
         organizationId,
@@ -110,7 +111,7 @@ export class UserService {
         lastName: data.lastName,
         role: data.role,
         phone: data.phone,
-        inviteToken,
+        inviteToken: hashedToken,
         inviteExpiresAt,
         isActive: false, // Will be activated when they accept invite
       },
@@ -131,7 +132,7 @@ export class UserService {
       where: { id: organizationId },
       select: { name: true },
     });
-    await emailService.sendInvitation(user.email, inviteToken, org?.name);
+    await emailService.sendInvitation(user.email, rawToken, org?.name);
 
     return user;
   }
@@ -140,8 +141,11 @@ export class UserService {
     token: string,
     data: { firstName: string; lastName: string; password: string },
   ) {
+    // Hash the incoming token to match stored hash
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
     const user = await prisma.user.findFirst({
-      where: { inviteToken: token, deletedAt: null },
+      where: { inviteToken: hashedToken, deletedAt: null },
     });
 
     if (!user) {
@@ -250,25 +254,26 @@ export class UserService {
       throw new ConflictError('User has already accepted invitation');
     }
 
-    // Generate new invite token
-    const inviteToken = crypto.randomBytes(32).toString('hex');
+    // Generate new invite token — store hash, send raw via email
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
     const inviteExpiresAt = new Date();
     inviteExpiresAt.setDate(inviteExpiresAt.getDate() + 7);
 
     await prisma.user.update({
       where: { id },
       data: {
-        inviteToken,
+        inviteToken: hashedToken,
         inviteExpiresAt,
       },
     });
 
-    // Send invitation email
+    // Send invitation email with raw (unhashed) token
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { name: true },
     });
-    await emailService.sendInvitation(user.email, inviteToken, org?.name);
+    await emailService.sendInvitation(user.email, rawToken, org?.name);
 
     return { message: 'Invitation resent successfully' };
   }
