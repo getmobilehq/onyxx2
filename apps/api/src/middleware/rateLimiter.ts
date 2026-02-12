@@ -56,3 +56,17 @@ export const uploadLimiter = rateLimit({
   keyGenerator: (req: Request) => req.user?.id || req.ip || 'unknown',
   message: rateLimitResponse,
 });
+
+/**
+ * Report limiter: 10 requests per 1 min per user/IP
+ * Applied to report generation endpoints (heavier queries)
+ */
+export const reportLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createStore('report'),
+  keyGenerator: (req: Request) => req.user?.id || req.ip || 'unknown',
+  message: rateLimitResponse,
+});

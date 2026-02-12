@@ -13,11 +13,15 @@ import auditRoutes from './audit.routes.js';
 import syncRoutes from './sync.routes.js';
 import { apiLimiter } from '../middleware/rateLimiter.js';
 import { auditLog } from '../middleware/auditLog.js';
+import { sanitizeInput } from '../middleware/sanitize.js';
 
 const router = Router();
 
 // Rate limiting for all API routes
 router.use(apiLimiter);
+
+// Sanitize user input to prevent stored XSS
+router.use(sanitizeInput);
 
 // Auto-audit mutations
 router.use(auditLog);

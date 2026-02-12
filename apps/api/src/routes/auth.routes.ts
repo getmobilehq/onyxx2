@@ -200,7 +200,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next) => 
  * Issue a new access token using a valid refresh token (from httpOnly cookie).
  * Rotates the refresh token — old one is invalidated, new one issued.
  */
-router.post('/refresh', async (req: Request, res: Response, next) => {
+router.post('/refresh', authLimiter, async (req: Request, res: Response, next) => {
   try {
     const rawToken = req.cookies?.refresh_token;
 

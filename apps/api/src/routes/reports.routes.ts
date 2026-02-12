@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { reportsController } from '../controllers/reports.controller.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
+import { reportLimiter } from '../middleware/rateLimiter.js';
 import {
   buildingPortfolioReportSchema,
   assessmentSummaryReportSchema,
@@ -11,8 +12,9 @@ import {
 
 const router = Router();
 
-// All routes require authentication
+// All routes require authentication + report rate limiting
 router.use(authenticate);
+router.use(reportLimiter);
 
 // GET /api/v1/reports/building-portfolio - Building portfolio report
 router.get(
