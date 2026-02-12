@@ -22,6 +22,9 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export async function exportDeficienciesPDF(data: DeficiencySummaryReport): Promise<void> {
+  if (data.summary.totalDeficiencies === 0) {
+    throw new Error('No deficiency data available to export');
+  }
   const { default: jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
@@ -81,6 +84,9 @@ export async function exportDeficienciesPDF(data: DeficiencySummaryReport): Prom
 }
 
 export async function exportDeficienciesExcel(data: DeficiencySummaryReport): Promise<void> {
+  if (data.summary.totalDeficiencies === 0) {
+    throw new Error('No deficiency data available to export');
+  }
   const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 

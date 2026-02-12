@@ -10,6 +10,9 @@ import {
 import type { PortfolioReport } from '../../types';
 
 export async function exportPortfolioPDF(data: PortfolioReport): Promise<void> {
+  if (!data.buildings || data.buildings.length === 0) {
+    throw new Error('No buildings data available to export');
+  }
   const { default: jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
@@ -44,6 +47,9 @@ export async function exportPortfolioPDF(data: PortfolioReport): Promise<void> {
 }
 
 export async function exportPortfolioExcel(data: PortfolioReport): Promise<void> {
+  if (!data.buildings || data.buildings.length === 0) {
+    throw new Error('No buildings data available to export');
+  }
   const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 

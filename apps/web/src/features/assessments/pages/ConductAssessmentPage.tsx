@@ -141,7 +141,10 @@ export default function ConductAssessmentPage() {
   const [editingDeficiency, setEditingDeficiency] = useState<Deficiency | null>(null);
   const [deletingDeficiency, setDeletingDeficiency] = useState<Deficiency | null>(null);
 
-  const elements: AssessmentElement[] = (elementsData as any)?.data || elementsData || [];
+  const rawElements = elementsData && typeof elementsData === 'object' && 'data' in elementsData
+    ? (elementsData as { data: AssessmentElement[] }).data
+    : elementsData;
+  const elements: AssessmentElement[] = (rawElements as AssessmentElement[]) || [];
   const selectedElement = elements.find((e) => e.id === selectedElementId) || null;
 
   // Form
@@ -418,10 +421,11 @@ export default function ConductAssessmentPage() {
             {/* Search */}
             <div className="p-3 border-b border-slate-200">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                 <input
                   type="text"
                   placeholder="Search elements..."
+                  aria-label="Search assessment elements"
                   value={sidebarFilter}
                   onChange={(e) => setSidebarFilter(e.target.value)}
                   className="input pl-9 text-sm w-full"
@@ -444,7 +448,7 @@ export default function ConductAssessmentPage() {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <StatusIcon status={el.status} />
+                      <span aria-hidden="true"><StatusIcon status={el.status} /></span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono font-semibold text-slate-700">{el.uniformatCode}</span>
@@ -487,12 +491,15 @@ export default function ConductAssessmentPage() {
 
                 {/* Condition Rating */}
                 <div className="card">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Condition Rating *</h3>
-                  <div className="flex items-center gap-3">
+                  <h3 id="condition-rating-label" className="text-sm font-semibold text-slate-700 mb-3">Condition Rating *</h3>
+                  <div className="flex items-center gap-3" role="radiogroup" aria-labelledby="condition-rating-label">
                     {[1, 2, 3, 4, 5].map((rating) => (
                       <button
                         key={rating}
                         type="button"
+                        role="radio"
+                        aria-checked={conditionRating === rating}
+                        aria-label={`Rate ${rating} - ${RATING_LABELS[rating]}`}
                         onClick={() => setValue('conditionRating', rating, { shouldDirty: true })}
                         className={`w-14 h-14 rounded-lg border-2 text-lg font-bold transition-all ${
                           conditionRating === rating
@@ -636,11 +643,11 @@ export default function ConductAssessmentPage() {
                 <div className="card">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                      <Camera className="w-4 h-4" />
+                      <Camera className="w-4 h-4" aria-hidden="true" />
                       Photos
-                      {(elementPhotos as any[]).length > 0 && (
+                      {Array.isArray(elementPhotos) && elementPhotos.length > 0 && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                          {(elementPhotos as any[]).length}
+                          {elementPhotos.length}
                         </span>
                       )}
                     </h3>
@@ -653,10 +660,10 @@ export default function ConductAssessmentPage() {
                     parentId={selectedElementId!}
                     disabled={!isOnline}
                   />
-                  {(elementPhotos as any[]).length > 0 && (
+                  {Array.isArray(elementPhotos) && elementPhotos.length > 0 && (
                     <div className="mt-4">
                       <PhotoGallery
-                        photos={elementPhotos as any[]}
+                        photos={elementPhotos}
                         canEdit
                         onDelete={(photoId) => deletePhoto.mutate(photoId)}
                         isDeleting={deletePhoto.isPending}
@@ -669,11 +676,11 @@ export default function ConductAssessmentPage() {
                 <div className="card">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" />
+                      <AlertTriangle className="w-4 h-4" aria-hidden="true" />
                       Deficiencies
-                      {(deficiencies as any[]).length > 0 && (
+                      {Array.isArray(deficiencies) && deficiencies.length > 0 && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                          {(deficiencies as any[]).length}
+                          {deficiencies.length}
                         </span>
                       )}
                     </h3>
@@ -685,7 +692,7 @@ export default function ConductAssessmentPage() {
                     </button>
                   </div>
 
-                  {(deficiencies as any[]).length === 0 ? (
+                  {!Array.isArray(deficiencies) || deficiencies.length === 0 ? (
                     <p className="text-sm text-slate-400 text-center py-4">No deficiencies recorded for this element.</p>
                   ) : (
                     <div className="space-y-3">
@@ -712,16 +719,16 @@ export default function ConductAssessmentPage() {
                               <button
                                 onClick={() => { setEditingDeficiency(d); setShowDeficiencyForm(true); }}
                                 className="p-1.5 hover:bg-slate-100 rounded"
-                                title="Edit"
+                                aria-label={`Edit deficiency: ${d.title}`}
                               >
-                                <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                                <Pencil className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
                               </button>
                               <button
                                 onClick={() => setDeletingDeficiency(d)}
                                 className="p-1.5 hover:bg-red-50 rounded"
-                                title="Delete"
+                                aria-label={`Delete deficiency: ${d.title}`}
                               >
-                                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                <Trash2 className="w-3.5 h-3.5 text-red-400" aria-hidden="true" />
                               </button>
                             </div>
                           </div>

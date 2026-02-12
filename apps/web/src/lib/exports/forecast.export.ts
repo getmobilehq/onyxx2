@@ -15,6 +15,9 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export async function exportForecastPDF(data: CapitalForecastReport): Promise<void> {
+  if (!data.forecast || data.forecast.length === 0) {
+    throw new Error('No forecast data available to export');
+  }
   const { default: jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
@@ -76,6 +79,9 @@ export async function exportForecastPDF(data: CapitalForecastReport): Promise<vo
 }
 
 export async function exportForecastExcel(data: CapitalForecastReport): Promise<void> {
+  if (!data.forecast || data.forecast.length === 0) {
+    throw new Error('No forecast data available to export');
+  }
   const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 

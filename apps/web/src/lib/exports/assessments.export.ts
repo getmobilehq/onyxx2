@@ -17,6 +17,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export async function exportAssessmentsPDF(data: AssessmentSummaryReport): Promise<void> {
+  if (!data.assessments || data.assessments.length === 0) {
+    throw new Error('No assessments data available to export');
+  }
   const { default: jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF();
@@ -51,6 +54,9 @@ export async function exportAssessmentsPDF(data: AssessmentSummaryReport): Promi
 }
 
 export async function exportAssessmentsExcel(data: AssessmentSummaryReport): Promise<void> {
+  if (!data.assessments || data.assessments.length === 0) {
+    throw new Error('No assessments data available to export');
+  }
   const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 

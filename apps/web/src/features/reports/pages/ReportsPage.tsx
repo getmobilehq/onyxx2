@@ -58,6 +58,7 @@ function formatNumber(value: number): string {
 
 function PortfolioTab() {
   const [branchId, setBranchId] = useState('');
+  const [exporting, setExporting] = useState(false);
   const { data: branchesData } = useBranches();
   const { data, isLoading, error } = usePortfolioReport(
     branchId ? { branchId } : {},
@@ -73,11 +74,15 @@ function PortfolioTab() {
   const { buildings, summary } = data;
 
   const handleExport = async (fn: () => Promise<void>, label: string) => {
+    if (exporting) return;
+    setExporting(true);
     try {
       await fn();
       toast.success(`${label} downloaded`);
-    } catch {
-      toast.error(`Failed to export ${label}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to export ${label}`);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -96,15 +101,19 @@ function PortfolioTab() {
         <div className="flex items-center gap-2 ml-auto">
           <button
             onClick={() => handleExport(() => exportPortfolioPDF(data), 'PDF')}
+            disabled={exporting}
+            aria-label="Export portfolio report as PDF"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <FileText className="w-4 h-4" /> PDF
+            <FileText className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'PDF'}
           </button>
           <button
             onClick={() => handleExport(() => exportPortfolioExcel(data), 'Excel')}
+            disabled={exporting}
+            aria-label="Export portfolio report as Excel"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <Table className="w-4 h-4" /> Excel
+            <Table className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'Excel'}
           </button>
         </div>
       </div>
@@ -204,6 +213,7 @@ function PortfolioTab() {
 
 function AssessmentsTab() {
   const [status, setStatus] = useState('');
+  const [exporting, setExporting] = useState(false);
   const { data, isLoading, error } = useAssessmentSummaryReport(
     status ? { status } : {},
   );
@@ -224,11 +234,15 @@ function AssessmentsTab() {
   const { assessments, statusSummary } = data;
 
   const handleExport = async (fn: () => Promise<void>, label: string) => {
+    if (exporting) return;
+    setExporting(true);
     try {
       await fn();
       toast.success(`${label} downloaded`);
-    } catch {
-      toast.error(`Failed to export ${label}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to export ${label}`);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -247,15 +261,19 @@ function AssessmentsTab() {
         <div className="flex items-center gap-2 ml-auto">
           <button
             onClick={() => handleExport(() => exportAssessmentsPDF(data), 'PDF')}
+            disabled={exporting}
+            aria-label="Export assessment report as PDF"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <FileText className="w-4 h-4" /> PDF
+            <FileText className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'PDF'}
           </button>
           <button
             onClick={() => handleExport(() => exportAssessmentsExcel(data), 'Excel')}
+            disabled={exporting}
+            aria-label="Export assessment report as Excel"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <Table className="w-4 h-4" /> Excel
+            <Table className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'Excel'}
           </button>
         </div>
       </div>
@@ -331,6 +349,7 @@ function AssessmentsTab() {
 function DeficienciesTab() {
   const [buildingId, setBuildingId] = useState('');
   const [expandedPriority, setExpandedPriority] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const { data: buildingsData } = useBuildings({ limit: 100 });
   const { data, isLoading, error } = useDeficiencySummaryReport(
     buildingId ? { buildingId } : {},
@@ -347,11 +366,15 @@ function DeficienciesTab() {
   const priorityOrder = ['immediate', 'short_term', 'medium_term', 'long_term'];
 
   const handleExport = async (fn: () => Promise<void>, label: string) => {
+    if (exporting) return;
+    setExporting(true);
     try {
       await fn();
       toast.success(`${label} downloaded`);
-    } catch {
-      toast.error(`Failed to export ${label}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to export ${label}`);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -370,15 +393,19 @@ function DeficienciesTab() {
         <div className="flex items-center gap-2 ml-auto">
           <button
             onClick={() => handleExport(() => exportDeficienciesPDF(data), 'PDF')}
+            disabled={exporting}
+            aria-label="Export deficiency report as PDF"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <FileText className="w-4 h-4" /> PDF
+            <FileText className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'PDF'}
           </button>
           <button
             onClick={() => handleExport(() => exportDeficienciesExcel(data), 'Excel')}
+            disabled={exporting}
+            aria-label="Export deficiency report as Excel"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <Table className="w-4 h-4" /> Excel
+            <Table className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'Excel'}
           </button>
         </div>
       </div>
@@ -481,6 +508,7 @@ function DeficienciesTab() {
 function ForecastTab() {
   const [branchId, setBranchId] = useState('');
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
   const { data: branchesData } = useBranches();
   const { data, isLoading, error } = useCapitalForecastReport(
     branchId ? { branchId } : {},
@@ -496,11 +524,15 @@ function ForecastTab() {
   const { forecast, totalCost } = data;
 
   const handleExport = async (fn: () => Promise<void>, label: string) => {
+    if (exporting) return;
+    setExporting(true);
     try {
       await fn();
       toast.success(`${label} downloaded`);
-    } catch {
-      toast.error(`Failed to export ${label}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to export ${label}`);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -519,15 +551,19 @@ function ForecastTab() {
         <div className="flex items-center gap-2 ml-auto">
           <button
             onClick={() => handleExport(() => exportForecastPDF(data), 'PDF')}
+            disabled={exporting}
+            aria-label="Export capital forecast as PDF"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <FileText className="w-4 h-4" /> PDF
+            <FileText className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'PDF'}
           </button>
           <button
             onClick={() => handleExport(() => exportForecastExcel(data), 'Excel')}
+            disabled={exporting}
+            aria-label="Export capital forecast as Excel"
             className="btn btn-sm btn-outline flex items-center gap-1.5"
           >
-            <Table className="w-4 h-4" /> Excel
+            <Table className="w-4 h-4" aria-hidden="true" /> {exporting ? 'Exporting...' : 'Excel'}
           </button>
         </div>
       </div>
@@ -677,13 +713,16 @@ export default function ReportsPage() {
 
       {/* Tabs */}
       <div className="border-b border-slate-200">
-        <nav className="flex gap-6 -mb-px overflow-x-auto">
+        <nav className="flex gap-6 -mb-px overflow-x-auto" role="tablist" aria-label="Report tabs">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${tab.key}`}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   isActive
@@ -691,7 +730,7 @@ export default function ReportsPage() {
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4" aria-hidden="true" />
                 {tab.label}
               </button>
             );
@@ -700,10 +739,12 @@ export default function ReportsPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'portfolio' && <PortfolioTab />}
-      {activeTab === 'assessments' && <AssessmentsTab />}
-      {activeTab === 'deficiencies' && <DeficienciesTab />}
-      {activeTab === 'forecast' && <ForecastTab />}
+      <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-label={`${activeTab} report`}>
+        {activeTab === 'portfolio' && <PortfolioTab />}
+        {activeTab === 'assessments' && <AssessmentsTab />}
+        {activeTab === 'deficiencies' && <DeficienciesTab />}
+        {activeTab === 'forecast' && <ForecastTab />}
+      </div>
     </div>
   );
 }
