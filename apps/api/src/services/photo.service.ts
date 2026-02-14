@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { storageService } from '../lib/storage.js';
+import { config } from '../config/index.js';
 import { ForbiddenError, NotFoundError, ValidationError } from '../lib/errors.js';
 
 export class PhotoService {
@@ -57,23 +58,22 @@ export class PhotoService {
     }
 
     // Upload file to storage
-    const { url, path } = await storageService.uploadFile(
+    const { url, path: s3Key } = await storageService.uploadFile(
       file.buffer,
       file.originalname,
       file.mimetype,
     );
 
-    // Get file size in bytes
-    const fileSize = file.size;
-
     // Create photo record
     const photo = await prisma.photo.create({
       data: {
-        url,
-        storagePath: path,
-        filename: file.originalname,
+        organizationId,
+        s3Key,
+        s3Bucket: config.supabaseStorageBucket,
+        filename: url,
+        originalFilename: file.originalname,
         mimeType: file.mimetype,
-        fileSize,
+        fileSize: file.size,
         caption: metadata.caption,
         sortOrder: metadata.sortOrder,
         buildingId: metadata.buildingId,
@@ -213,8 +213,8 @@ export class PhotoService {
     const photo = await this.getById(id, organizationId);
 
     // Delete from storage
-    if (photo.storagePath) {
-      await storageService.deleteFile(photo.storagePath);
+    if (photo.s3Key) {
+      await storageService.deleteFile(photo.s3Key);
     }
 
     // Soft delete from database
