@@ -142,7 +142,6 @@ function ProfileTab() {
 
 function ChangePasswordSection() {
   const changePassword = useChangePassword();
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -161,9 +160,8 @@ function ChangePasswordSection() {
     }
 
     try {
-      await changePassword.mutateAsync({ currentPassword, newPassword });
+      await changePassword.mutateAsync({ newPassword });
       toast.success('Password changed successfully');
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
@@ -181,17 +179,6 @@ function ChangePasswordSection() {
             <p className="text-sm text-red-800">{error}</p>
           </div>
         )}
-
-        <FormField label="Current Password">
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            className="input"
-            required
-            autoComplete="current-password"
-          />
-        </FormField>
 
         <FormField label="New Password">
           <input

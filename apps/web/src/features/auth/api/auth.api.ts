@@ -1,14 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { supabase } from '../../../lib/supabase';
 import apiClient from '../../../lib/api-client';
 import { useAuthStore } from '../../../stores/auth.store';
 import type {
-  AuthResponse,
-  LoginCredentials,
   User,
-  AcceptInviteData,
+  LoginCredentials,
   ChangePasswordData,
   ForgotPasswordData,
-  ResetPasswordData,
 } from '../../../types';
 
 // ============================================
@@ -16,8 +14,19 @@ import type {
 // ============================================
 
 export const authApi = {
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const { data } = await apiClient.post<AuthResponse>('/auth/login', credentials);
+  /**
+   * Login via Supabase Auth, then call our API to get internal user data
+   */
+  login: async (credentials: LoginCredentials): Promise<User> => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    });
+
+    if (error) throw new Error(error.message);
+
+    // Call our API to sync login state and get internal user
+    const { data } = await apiClient.post<User>('/auth/callback');
     return data;
   },
 
@@ -26,28 +35,33 @@ export const authApi = {
     return data;
   },
 
-  acceptInvite: async (token: string, data: AcceptInviteData): Promise<User> => {
-    const { data: result } = await apiClient.post<User>(`/auth/accept-invite/${token}`, data);
-    return result;
-  },
-
   changePassword: async (data: ChangePasswordData): Promise<{ message: string }> => {
     const { data: result } = await apiClient.post<{ message: string }>('/auth/change-password', data);
     return result;
   },
 
+  /**
+   * Forgot password — calls Supabase directly
+   */
   forgotPassword: async (data: ForgotPasswordData): Promise<{ message: string }> => {
-    const { data: result } = await apiClient.post<{ message: string }>('/auth/forgot-password', data);
-    return result;
-  },
-
-  resetPassword: async (token: string, data: ResetPasswordData): Promise<{ message: string }> => {
-    const { data: result } = await apiClient.post<{ message: string }>(`/auth/reset-password/${token}`, data);
-    return result;
+    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    });
+    if (error) throw new Error(error.message);
+    return { message: 'Password reset email sent' };
   },
 
   /**
-   * Logout — calls the backend to revoke the refresh token
+   * Reset password — called after user arrives via reset link with active Supabase session
+   */
+  resetPassword: async (password: string): Promise<{ message: string }> => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw new Error(error.message);
+    return { message: 'Password reset successfully' };
+  },
+
+  /**
+   * Logout — calls the backend for audit logging, then signs out of Supabase
    */
   logout: async (): Promise<void> => {
     try {
@@ -55,6 +69,7 @@ export const authApi = {
     } catch {
       // Proceed with client-side cleanup even if the server call fails
     }
+    await supabase.auth.signOut();
   },
 };
 
@@ -67,8 +82,8 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: authApi.login,
-    onSuccess: (data) => {
-      setAuth(data.user, data.token);
+    onSuccess: (user) => {
+      setAuth(user);
     },
   });
 };
@@ -81,13 +96,6 @@ export const useLogout = () => {
     onSuccess: () => {
       clearAuth();
     },
-  });
-};
-
-export const useAcceptInvite = () => {
-  return useMutation({
-    mutationFn: ({ token, data }: { token: string; data: AcceptInviteData }) =>
-      authApi.acceptInvite(token, data),
   });
 };
 
@@ -105,8 +113,7 @@ export const useForgotPassword = () => {
 
 export const useResetPassword = () => {
   return useMutation({
-    mutationFn: ({ token, data }: { token: string; data: ResetPasswordData }) =>
-      authApi.resetPassword(token, data),
+    mutationFn: authApi.resetPassword,
   });
 };
 

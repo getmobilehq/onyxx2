@@ -1,9 +1,9 @@
 import { UserRole, Prisma } from '@prisma/client';
-import bcrypt from 'bcrypt';
 import { prisma } from '../lib/prisma.js';
+import { supabaseAdmin } from '../lib/supabase.js';
 import { NotFoundError, ConflictError, ForbiddenError } from '../lib/errors.js';
 import { emailService } from '../lib/email.js';
-import crypto from 'crypto';
+import { config } from '../config/index.js';
 
 interface ListUsersParams {
   organizationId: string;
@@ -96,24 +96,35 @@ export class UserService {
       throw new ConflictError('User with this email already exists');
     }
 
-    // Generate invite token — store hash, send raw via email
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const inviteExpiresAt = new Date();
-    inviteExpiresAt.setDate(inviteExpiresAt.getDate() + 7); // 7 days
+    // Create Supabase Auth user
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      email_confirm: false,
+      app_metadata: {
+        organizationId,
+        role: data.role,
+      },
+      user_metadata: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+      },
+    });
 
-    // Create user with hashed invite token
+    if (authError) {
+      throw new ConflictError(`Failed to create auth user: ${authError.message}`);
+    }
+
+    // Create internal User record linked to Supabase auth
     const user = await prisma.user.create({
       data: {
         organizationId,
+        supabaseAuthId: authUser.user.id,
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
         role: data.role,
         phone: data.phone,
-        inviteToken: hashedToken,
-        inviteExpiresAt,
-        isActive: false, // Will be activated when they accept invite
+        isActive: true,
       },
     });
 
@@ -127,65 +138,30 @@ export class UserService {
       });
     }
 
+    // Generate invite link via Supabase
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'invite',
+      email: data.email,
+      options: {
+        redirectTo: `${config.webUrl}/auth/callback`,
+      },
+    });
+
+    if (linkError) {
+      console.error('Failed to generate invite link:', linkError.message);
+    }
+
     // Send invitation email
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { name: true },
     });
-    await emailService.sendInvitation(user.email, rawToken, org?.name);
+
+    if (linkData?.properties?.action_link) {
+      await emailService.sendInvitation(data.email, linkData.properties.action_link, org?.name);
+    }
 
     return user;
-  }
-
-  async acceptInvite(
-    token: string,
-    data: { firstName: string; lastName: string; password: string },
-  ) {
-    // Hash the incoming token to match stored hash
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-
-    const user = await prisma.user.findFirst({
-      where: { inviteToken: hashedToken, deletedAt: null },
-    });
-
-    if (!user) {
-      throw new NotFoundError('Invitation');
-    }
-
-    if (user.isActive) {
-      throw new ConflictError('This invitation has already been accepted');
-    }
-
-    if (user.inviteExpiresAt && user.inviteExpiresAt < new Date()) {
-      throw new ConflictError('This invitation has expired. Please request a new one.');
-    }
-
-    const passwordHash = await bcrypt.hash(data.password, 12);
-
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        passwordHash,
-        isActive: true,
-        inviteToken: null,
-        inviteExpiresAt: null,
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        organizationId: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    return updated;
   }
 
   async getById(id: string, organizationId?: string) {
@@ -227,7 +203,14 @@ export class UserService {
       isActive?: boolean;
     },
   ) {
-    await this.getById(id, organizationId);
+    const user = await this.getById(id, organizationId);
+
+    // If role is changing, update Supabase app_metadata too
+    if (data.role && data.role !== user.role && user.supabaseAuthId) {
+      await supabaseAdmin.auth.admin.updateUserById(user.supabaseAuthId, {
+        app_metadata: { role: data.role },
+      });
+    }
 
     return prisma.user.update({
       where: { id },
@@ -236,7 +219,14 @@ export class UserService {
   }
 
   async deactivate(id: string, organizationId: string) {
-    await this.getById(id, organizationId);
+    const user = await this.getById(id, organizationId);
+
+    // Disable in Supabase Auth
+    if (user.supabaseAuthId) {
+      await supabaseAdmin.auth.admin.updateUserById(user.supabaseAuthId, {
+        ban_duration: 'none',
+      });
+    }
 
     return prisma.user.update({
       where: { id },
@@ -250,30 +240,31 @@ export class UserService {
   async resendInvite(id: string, organizationId: string) {
     const user = await this.getById(id, organizationId);
 
-    if (user.isActive) {
-      throw new ConflictError('User has already accepted invitation');
+    if (!user.supabaseAuthId) {
+      throw new ConflictError('User does not have an auth account');
     }
 
-    // Generate new invite token — store hash, send raw via email
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const inviteExpiresAt = new Date();
-    inviteExpiresAt.setDate(inviteExpiresAt.getDate() + 7);
-
-    await prisma.user.update({
-      where: { id },
-      data: {
-        inviteToken: hashedToken,
-        inviteExpiresAt,
+    // Generate a new invite link via Supabase
+    const { data: linkData, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'invite',
+      email: user.email,
+      options: {
+        redirectTo: `${config.webUrl}/auth/callback`,
       },
     });
 
-    // Send invitation email with raw (unhashed) token
+    if (error) {
+      throw new ConflictError(`Failed to generate invite link: ${error.message}`);
+    }
+
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { name: true },
     });
-    await emailService.sendInvitation(user.email, rawToken, org?.name);
+
+    if (linkData?.properties?.action_link) {
+      await emailService.sendInvitation(user.email, linkData.properties.action_link, org?.name);
+    }
 
     return { message: 'Invitation resent successfully' };
   }

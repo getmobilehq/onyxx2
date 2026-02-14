@@ -1,13 +1,53 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import { createClient } from '@supabase/supabase-js';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('🌱 Starting seed...');
+// Create Supabase admin client for seeding auth users
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
-  // Hash default dev password
-  const defaultPasswordHash = await bcrypt.hash('password123', 12);
+/**
+ * Create a Supabase auth user and return their ID.
+ * If the user already exists, find and return the existing ID.
+ */
+async function createAuthUser(
+  email: string,
+  password: string,
+  organizationId: string,
+  role: string,
+): Promise<string> {
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { organizationId, role },
+  });
+
+  if (error) {
+    // If user already exists, try to find them
+    if (error.message.includes('already been registered') || error.message.includes('already exists')) {
+      const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+      const existing = listData.users.find(u => u.email === email);
+      if (existing) {
+        // Update their app_metadata in case it changed
+        await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+          app_metadata: { organizationId, role },
+        });
+        return existing.id;
+      }
+    }
+    throw new Error(`Failed to create auth user ${email}: ${error.message}`);
+  }
+
+  return data.user.id;
+}
+
+async function main() {
+  console.log('Starting seed...');
 
   // 1. Create Organization
   console.log('Creating organization...');
@@ -22,47 +62,51 @@ async function main() {
       maxUsers: 25,
     },
   });
-  console.log(`✅ Created organization: ${org.name} (${org.id})`);
+  console.log(`Created organization: ${org.name} (${org.id})`);
 
-  // 2. Create Users
+  // 2. Create Users (with Supabase Auth)
   console.log('Creating users...');
+
+  const adminAuthId = await createAuthUser('admin@acme.com', 'password123', org.id, 'org_admin');
   const adminUser = await prisma.user.create({
     data: {
       organizationId: org.id,
+      supabaseAuthId: adminAuthId,
       email: 'admin@acme.com',
       firstName: 'John',
       lastName: 'Admin',
       role: 'org_admin',
-      passwordHash: defaultPasswordHash,
       isActive: true,
     },
   });
 
+  const managerAuthId = await createAuthUser('manager@acme.com', 'password123', org.id, 'branch_manager');
   const managerUser = await prisma.user.create({
     data: {
       organizationId: org.id,
+      supabaseAuthId: managerAuthId,
       email: 'manager@acme.com',
       firstName: 'Sarah',
       lastName: 'Manager',
       role: 'branch_manager',
-      passwordHash: defaultPasswordHash,
       isActive: true,
     },
   });
 
+  const assessorAuthId = await createAuthUser('assessor@acme.com', 'password123', org.id, 'assessor');
   const assessorUser = await prisma.user.create({
     data: {
       organizationId: org.id,
+      supabaseAuthId: assessorAuthId,
       email: 'assessor@acme.com',
       firstName: 'Mike',
       lastName: 'Assessor',
       role: 'assessor',
-      passwordHash: defaultPasswordHash,
       isActive: true,
     },
   });
 
-  console.log(`✅ Created users: ${adminUser.email}, ${managerUser.email}, ${assessorUser.email}`);
+  console.log(`Created users: ${adminUser.email}, ${managerUser.email}, ${assessorUser.email}`);
 
   // 3. Create Branches
   console.log('Creating branches...');
@@ -92,7 +136,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created branches: ${westCoastBranch.name}, ${eastCoastBranch.name}`);
+  console.log(`Created branches: ${westCoastBranch.name}, ${eastCoastBranch.name}`);
 
   // 4. Assign users to branches
   await prisma.userBranch.createMany({
@@ -102,7 +146,7 @@ async function main() {
       { userId: assessorUser.id, branchId: westCoastBranch.id },
     ],
   });
-  console.log('✅ Assigned users to branches');
+  console.log('Assigned users to branches');
 
   // 5. Create Buildings
   console.log('Creating buildings...');
@@ -166,108 +210,25 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created buildings: ${building1.name}, ${building2.name}, ${building3.name}`);
+  console.log(`Created buildings: ${building1.name}, ${building2.name}, ${building3.name}`);
 
-  // 6. Create Uniformat Elements (sample - real system would have 100+)
+  // 6. Create Uniformat Elements
   console.log('Creating Uniformat elements...');
   const uniformatElements = await prisma.uniformatElement.createMany({
     data: [
-      {
-        code: 'A10',
-        name: 'Foundations',
-        systemGroup: 'Substructure',
-        level: 1,
-        defaultLifetimeYears: 100,
-        isActive: true,
-        sortOrder: 1,
-      },
-      {
-        code: 'B10',
-        name: 'Superstructure',
-        systemGroup: 'Shell',
-        level: 1,
-        defaultLifetimeYears: 75,
-        isActive: true,
-        sortOrder: 2,
-      },
-      {
-        code: 'B20',
-        name: 'Exterior Enclosure',
-        systemGroup: 'Shell',
-        level: 1,
-        defaultLifetimeYears: 50,
-        isActive: true,
-        sortOrder: 3,
-      },
-      {
-        code: 'B2010',
-        name: 'Exterior Walls',
-        systemGroup: 'Shell',
-        level: 2,
-        parentCode: 'B20',
-        defaultLifetimeYears: 50,
-        defaultUnitOfMeasure: 'SF',
-        isActive: true,
-        sortOrder: 4,
-      },
-      {
-        code: 'B3010',
-        name: 'Roof Coverings',
-        systemGroup: 'Shell',
-        level: 2,
-        defaultLifetimeYears: 25,
-        defaultUnitOfMeasure: 'SF',
-        isActive: true,
-        sortOrder: 5,
-      },
-      {
-        code: 'C10',
-        name: 'Interior Construction',
-        systemGroup: 'Interiors',
-        level: 1,
-        defaultLifetimeYears: 30,
-        isActive: true,
-        sortOrder: 6,
-      },
-      {
-        code: 'D20',
-        name: 'Plumbing',
-        systemGroup: 'Services',
-        level: 1,
-        defaultLifetimeYears: 40,
-        isActive: true,
-        sortOrder: 7,
-      },
-      {
-        code: 'D30',
-        name: 'HVAC',
-        systemGroup: 'Services',
-        level: 1,
-        defaultLifetimeYears: 25,
-        isActive: true,
-        sortOrder: 8,
-      },
-      {
-        code: 'D40',
-        name: 'Fire Protection',
-        systemGroup: 'Services',
-        level: 1,
-        defaultLifetimeYears: 50,
-        isActive: true,
-        sortOrder: 9,
-      },
-      {
-        code: 'D50',
-        name: 'Electrical',
-        systemGroup: 'Services',
-        level: 1,
-        defaultLifetimeYears: 40,
-        isActive: true,
-        sortOrder: 10,
-      },
+      { code: 'A10', name: 'Foundations', systemGroup: 'Substructure', level: 1, defaultLifetimeYears: 100, isActive: true, sortOrder: 1 },
+      { code: 'B10', name: 'Superstructure', systemGroup: 'Shell', level: 1, defaultLifetimeYears: 75, isActive: true, sortOrder: 2 },
+      { code: 'B20', name: 'Exterior Enclosure', systemGroup: 'Shell', level: 1, defaultLifetimeYears: 50, isActive: true, sortOrder: 3 },
+      { code: 'B2010', name: 'Exterior Walls', systemGroup: 'Shell', level: 2, parentCode: 'B20', defaultLifetimeYears: 50, defaultUnitOfMeasure: 'SF', isActive: true, sortOrder: 4 },
+      { code: 'B3010', name: 'Roof Coverings', systemGroup: 'Shell', level: 2, defaultLifetimeYears: 25, defaultUnitOfMeasure: 'SF', isActive: true, sortOrder: 5 },
+      { code: 'C10', name: 'Interior Construction', systemGroup: 'Interiors', level: 1, defaultLifetimeYears: 30, isActive: true, sortOrder: 6 },
+      { code: 'D20', name: 'Plumbing', systemGroup: 'Services', level: 1, defaultLifetimeYears: 40, isActive: true, sortOrder: 7 },
+      { code: 'D30', name: 'HVAC', systemGroup: 'Services', level: 1, defaultLifetimeYears: 25, isActive: true, sortOrder: 8 },
+      { code: 'D40', name: 'Fire Protection', systemGroup: 'Services', level: 1, defaultLifetimeYears: 50, isActive: true, sortOrder: 9 },
+      { code: 'D50', name: 'Electrical', systemGroup: 'Services', level: 1, defaultLifetimeYears: 40, isActive: true, sortOrder: 10 },
     ],
   });
-  console.log(`✅ Created ${uniformatElements.count} Uniformat elements`);
+  console.log(`Created ${uniformatElements.count} Uniformat elements`);
 
   // 7. Create Assessments
   console.log('Creating assessments...');
@@ -297,7 +258,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created assessments: ${assessment1.name}, ${assessment2.name}`);
+  console.log(`Created assessments: ${assessment1.name}, ${assessment2.name}`);
 
   // 8. Assign assessors
   await prisma.assessmentAssignee.create({
@@ -307,9 +268,9 @@ async function main() {
       assignedById: managerUser.id,
     },
   });
-  console.log('✅ Assigned assessors to assessments');
+  console.log('Assigned assessors to assessments');
 
-  // 9. Add assessment elements to assessment 1
+  // 9. Add assessment elements
   console.log('Adding elements to assessment...');
   const uniformatList = await prisma.uniformatElement.findMany({
     where: { isActive: true },
@@ -330,13 +291,12 @@ async function main() {
     });
   }
 
-  // Update assessment element count
   await prisma.assessment.update({
     where: { id: assessment1.id },
     data: { totalElements: uniformatList.length },
   });
 
-  console.log(`✅ Added ${uniformatList.length} elements to assessment`);
+  console.log(`Added ${uniformatList.length} elements to assessment`);
 
   // 10. Create Deficiency Categories
   console.log('Creating deficiency categories...');
@@ -350,10 +310,10 @@ async function main() {
       { code: 'COSM', name: 'Cosmetic', color: '#00FF00', sortOrder: 6 },
     ],
   });
-  console.log('✅ Created deficiency categories');
+  console.log('Created deficiency categories');
 
-  console.log('\n🎉 Seed completed successfully!\n');
-  console.log('📊 Summary:');
+  console.log('\nSeed completed successfully!\n');
+  console.log('Summary:');
   console.log(`   - Organization: ${org.name}`);
   console.log(`   - Users: 3 (admin, manager, assessor)`);
   console.log(`   - Branches: 2`);
@@ -362,22 +322,15 @@ async function main() {
   console.log(`   - Uniformat Elements: ${uniformatElements.count}`);
   console.log(`   - Assessment Elements: ${uniformatList.length}`);
   console.log(`   - Deficiency Categories: 6`);
-  console.log('\n🔑 Test Users (password: password123):');
-  console.log(`   - Admin: admin@acme.com (${adminUser.id})`);
-  console.log(`   - Manager: manager@acme.com (${managerUser.id})`);
-  console.log(`   - Assessor: assessor@acme.com (${assessorUser.id})`);
-  console.log('\n🏢 Buildings:');
-  console.log(`   - ${building1.name} (${building1.id})`);
-  console.log(`   - ${building2.name} (${building2.id})`);
-  console.log(`   - ${building3.name} (${building3.id})`);
-  console.log('\n📋 Assessments:');
-  console.log(`   - ${assessment1.name} - Status: ${assessment1.status} (${assessment1.id})`);
-  console.log(`   - ${assessment2.name} - Status: ${assessment2.status} (${assessment2.id})`);
+  console.log('\nTest Users (password: password123):');
+  console.log(`   - Admin: admin@acme.com`);
+  console.log(`   - Manager: manager@acme.com`);
+  console.log(`   - Assessor: assessor@acme.com`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    console.error('Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

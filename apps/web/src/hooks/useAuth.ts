@@ -3,12 +3,11 @@
  * Provides auth utilities and permission checks
  */
 
-import { useAuthStore, getAccessToken } from '../stores/auth.store';
+import { useAuthStore } from '../stores/auth.store';
 import type { UserRole } from '../types';
 
 export const useAuth = () => {
   const { user, isAuthenticated, setAuth, clearAuth } = useAuthStore();
-  const token = getAccessToken();
 
   // Permission helpers
   const hasRole = (role: UserRole): boolean => {
@@ -62,7 +61,6 @@ export const useAuth = () => {
 
   return {
     user,
-    token,
     isAuthenticated,
     setAuth,
     clearAuth,

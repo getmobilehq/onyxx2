@@ -40,7 +40,7 @@ model Organization {
 model User {
   id              String    @id @default(uuid()) @db.Uuid
   organizationId  String    @map("organization_id") @db.Uuid
-  auth0Id         String?   @unique @map("auth0_id") @db.VarChar(255)
+  supabaseAuthId  String?   @unique @map("supabase_auth_id") @db.VarChar(255)
   email           String    @db.VarChar(255)
   firstName       String?   @map("first_name") @db.VarChar(100)
   lastName        String?   @map("last_name") @db.VarChar(100)

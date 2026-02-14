@@ -6,7 +6,6 @@ if (config.sendgridApiKey) {
 }
 
 const FROM_EMAIL = config.fromEmail || 'noreply@onyxreport.com';
-const WEB_URL = config.webUrl;
 
 class EmailService {
   private enabled: boolean;
@@ -18,8 +17,7 @@ class EmailService {
     }
   }
 
-  async sendInvitation(email: string, inviteToken: string, orgName?: string): Promise<void> {
-    const inviteUrl = `${WEB_URL}/accept-invite/${inviteToken}`;
+  async sendInvitation(email: string, inviteUrl: string, orgName?: string): Promise<void> {
     const subject = `You've been invited to ${orgName || 'Onyx Report'}`;
     const html = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
@@ -29,27 +27,7 @@ class EmailService {
         <p style="text-align: center; margin: 32px 0;">
           <a href="${inviteUrl}" style="background-color: #1e293b; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Accept Invitation</a>
         </p>
-        <p style="color: #94a3b8; font-size: 14px;">This link expires in 7 days.</p>
         <p style="color: #94a3b8; font-size: 14px;">If you didn't expect this email, you can safely ignore it.</p>
-      </div>
-    `;
-
-    await this.send(email, subject, html);
-  }
-
-  async sendPasswordReset(email: string, resetToken: string): Promise<void> {
-    const resetUrl = `${WEB_URL}/reset-password/${resetToken}`;
-    const subject = 'Reset your Onyx Report password';
-    const html = `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2 style="color: #1e293b;">Password Reset Request</h2>
-        <p style="color: #475569;">We received a request to reset your password.</p>
-        <p style="color: #475569;">Click the button below to set a new password:</p>
-        <p style="text-align: center; margin: 32px 0;">
-          <a href="${resetUrl}" style="background-color: #1e293b; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Reset Password</a>
-        </p>
-        <p style="color: #94a3b8; font-size: 14px;">This link expires in 1 hour.</p>
-        <p style="color: #94a3b8; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
       </div>
     `;
 

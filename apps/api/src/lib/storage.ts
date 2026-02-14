@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from './supabase.js';
 import { config } from '../config/index.js';
-
-// Initialize Supabase client for storage
-const supabase = config.supabaseUrl && config.supabaseServiceRoleKey
-  ? createClient(config.supabaseUrl, config.supabaseServiceRoleKey)
-  : null;
 
 export class StorageService {
   private bucket = config.supabaseStorageBucket;
@@ -14,16 +9,12 @@ export class StorageService {
     filename: string,
     mimeType: string,
   ): Promise<{ url: string; path: string }> {
-    if (!supabase) {
-      throw new Error('Supabase storage not configured');
-    }
-
     const timestamp = Date.now();
     const extension = filename.split('.').pop();
     const cleanName = filename.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-]/g, '-');
     const path = `${timestamp}-${cleanName}.${extension}`;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
       .from(this.bucket)
       .upload(path, file, {
         contentType: mimeType,
@@ -35,7 +26,7 @@ export class StorageService {
     }
 
     // Get public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from(this.bucket)
       .getPublicUrl(data.path);
 
@@ -46,11 +37,7 @@ export class StorageService {
   }
 
   async deleteFile(path: string): Promise<void> {
-    if (!supabase) {
-      throw new Error('Supabase storage not configured');
-    }
-
-    const { error } = await supabase.storage
+    const { error } = await supabaseAdmin.storage
       .from(this.bucket)
       .remove([path]);
 
@@ -60,11 +47,7 @@ export class StorageService {
   }
 
   async getPublicUrl(path: string): Promise<string> {
-    if (!supabase) {
-      throw new Error('Supabase storage not configured');
-    }
-
-    const { data } = supabase.storage
+    const { data } = supabaseAdmin.storage
       .from(this.bucket)
       .getPublicUrl(path);
 

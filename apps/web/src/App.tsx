@@ -7,11 +7,12 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Toaster } from 'react-hot-toast';
-import axios from 'axios';
 import { queryClient } from './lib/query-client';
 import { dexiePersister } from './lib/offline/query-persister';
 import { startSyncWatcher } from './lib/offline/sync-processor';
-import { useAuthStore, setAccessToken } from './stores/auth.store';
+import { supabase } from './lib/supabase';
+import { useAuthStore } from './stores/auth.store';
+import apiClient from './lib/api-client';
 import ErrorBoundary from './components/ErrorBoundary';
 import UpdatePrompt from './components/ui/UpdatePrompt';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -22,7 +23,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy-loaded pages
 const LoginPage = lazy(() => import('./features/auth/pages/LoginPage'));
-const AcceptInvitePage = lazy(() => import('./features/auth/pages/AcceptInvitePage'));
+const AuthCallbackPage = lazy(() => import('./features/auth/pages/AuthCallbackPage'));
 const ForgotPasswordPage = lazy(() => import('./features/auth/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -47,31 +48,37 @@ const persistOptions = {
 };
 
 function App() {
-  const { isAuthenticated, clearAuth } = useAuthStore();
-  const [authReady, setAuthReady] = useState(!isAuthenticated);
+  const { setAuth, clearAuth } = useAuthStore();
+  const [authReady, setAuthReady] = useState(false);
 
-  // On mount, if the user was previously authenticated, try to refresh the access token
-  // (the in-memory token is lost on page reload but the httpOnly cookie persists)
+  // On mount, check for existing Supabase session
   useEffect(() => {
-    if (!isAuthenticated) return;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        try {
+          // Fetch internal user data from our API
+          const { data } = await apiClient.get('/auth/me');
+          setAuth(data);
+        } catch {
+          clearAuth();
+          await supabase.auth.signOut();
+        }
+      } else {
+        clearAuth();
+      }
+      setAuthReady(true);
+    });
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
-    axios
-      .post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true })
-      .then(({ data }) => {
-        const token = data?.data?.token ?? data?.token;
-        if (token) {
-          setAccessToken(token);
-        } else {
+    // Listen for auth state changes (sign out, token refresh, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
           clearAuth();
         }
-      })
-      .catch(() => {
-        clearAuth();
-      })
-      .finally(() => {
-        setAuthReady(true);
-      });
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -106,9 +113,9 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>

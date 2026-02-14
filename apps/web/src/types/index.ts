@@ -22,33 +22,17 @@ export interface User {
   updatedAt: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  user: User;
-}
-
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
-export interface AcceptInviteData {
-  firstName: string;
-  lastName: string;
-  password: string;
-}
-
 export interface ChangePasswordData {
-  currentPassword: string;
   newPassword: string;
 }
 
 export interface ForgotPasswordData {
   email: string;
-}
-
-export interface ResetPasswordData {
-  password: string;
 }
 
 // ============================================

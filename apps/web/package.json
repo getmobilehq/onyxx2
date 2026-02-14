@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^3.3.4",
     "@sentry/react": "^10.38.0",
     "@sentry/vite-plugin": "^4.9.1",
+    "@supabase/supabase-js": "^2.95.3",
     "@tanstack/react-query": "^5.17.19",
     "@tanstack/react-query-persist-client": "^5.90.22",
     "@tanstack/react-table": "^8.11.6",

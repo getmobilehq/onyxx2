@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useResetPassword } from '../api/auth.api';
 import { OnyxLogo } from '../../../components/brand/OnyxIcons';
 import { Spinner } from '../../../components/brand/OnyxIcons';
 import { CheckCircle } from 'lucide-react';
 
 export default function ResetPasswordPage() {
-  const { token } = useParams<{ token: string }>();
   const resetPassword = useResetPassword();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,10 +26,7 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      await resetPassword.mutateAsync({
-        token: token!,
-        data: { password },
-      });
+      await resetPassword.mutateAsync(password);
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to reset password. The link may be expired or invalid.');

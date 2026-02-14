@@ -11,6 +11,7 @@ declare global {
     interface Request {
       user?: {
         id: string;
+        supabaseAuthId: string;
         organizationId: string;
         role: UserRole;
         email: string;
@@ -33,19 +34,23 @@ export async function authenticate(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT
-    const secret = new TextEncoder().encode(config.jwtSecret);
-    const { payload } = await jwtVerify(token, secret);
+    // Verify Supabase JWT using the Supabase JWT secret
+    const secret = new TextEncoder().encode(config.supabaseJwtSecret);
+    const { payload } = await jwtVerify(token, secret, {
+      audience: 'authenticated',
+    });
 
-    if (!payload.sub || !payload.organizationId) {
-      throw new UnauthorizedError('Invalid token payload');
+    const supabaseAuthId = payload.sub;
+    if (!supabaseAuthId) {
+      throw new UnauthorizedError('Invalid token payload — missing sub');
     }
 
-    // Fetch user from database
+    // Look up the internal user by their supabaseAuthId
     const user = await prisma.user.findUnique({
-      where: { id: payload.sub as string },
+      where: { supabaseAuthId },
       select: {
         id: true,
+        supabaseAuthId: true,
         organizationId: true,
         role: true,
         email: true,
@@ -61,6 +66,7 @@ export async function authenticate(
     // Attach user to request
     req.user = {
       id: user.id,
+      supabaseAuthId: user.supabaseAuthId!,
       organizationId: user.organizationId,
       role: user.role,
       email: user.email,
